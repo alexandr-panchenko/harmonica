@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chromatic Harmonica Trainer - Learn Notes on Sheet Music</title>
+  <meta name="description" content="An interactive web application to master chromatic harmonica notes. Practice reading sheet music with a visual harmonica, sound synthesis, and real-time feedback.">
+  <link rel="stylesheet" href="style.css">
+  <!-- abcjs library for dynamic rendering of sheet music -->
+  <script src="https://cdn.jsdelivr.net/npm/abcjs@6.6.3/dist/abcjs-basic-min.js"></script>
+</head>
+<body>
+
+  <header>
+    <h1>Harmonica Note Trainer <span class="badge">Chromatic</span></h1>
+    <p>Practice reading sheet music notes and playing them on a standard 12-hole chromatic harmonica</p>
+  </header>
+
+  <main class="app-container">
+    
+    <!-- Left Column: Controls & Game Stats -->
+    <div class="controls-panel">
+      
+      <!-- Stats Panel -->
+      <div class="card">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M3 20v-8a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/><path d="M11 20v-4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v8"/><path d="M19 20v-12a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v12"/></svg>
+          Statistics
+        </h2>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <div class="stat-label">Score</div>
+            <div id="stat-score" class="stat-value highlight">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Current Streak</div>
+            <div id="stat-streak" class="stat-value">0</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Accuracy</div>
+            <div id="stat-accuracy" class="stat-value">0%</div>
+          </div>
+          <div class="stat-item">
+            <div class="stat-label">Avg Speed</div>
+            <div id="stat-speed" class="stat-value">0.0s</div>
+          </div>
+        </div>
+        <button id="btn-reset-stats" class="btn-toggle" style="width: 100%; border: 1px solid rgba(255,255,255,0.08); font-size: 0.85rem; padding: 0.5rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+          Reset Statistics
+        </button>
+      </div>
+
+      <!-- Settings Panel -->
+      <div class="card">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          Config & Training Settings
+        </h2>
+        
+        <div class="settings-list">
+          <!-- Range Picker -->
+          <div class="settings-item">
+            <span class="control-label" style="font-size: 0.9rem;">Hole Range</span>
+            <select id="select-range" class="select-custom">
+              <option value="full" selected>Full Range (Holes 1-12)</option>
+              <option value="low">Low Octave (Holes 1-4)</option>
+              <option value="mid">Middle Octave (Holes 5-8)</option>
+              <option value="high">High Octave (Holes 9-12)</option>
+              <option value="low-mid">Low + Middle (Holes 1-8)</option>
+              <option value="mid-high">Middle + High (Holes 5-12)</option>
+            </select>
+          </div>
+
+          <!-- Accidentals spelling style -->
+          <div class="settings-item">
+            <span class="control-label" style="font-size: 0.9rem;">Accidentals Spelling</span>
+            <select id="select-spelling" class="select-custom">
+              <option value="random" selected>Random (Sharps & Flats)</option>
+              <option value="sharps">Prefer Sharps (#)</option>
+              <option value="flats">Prefer Flats (♭)</option>
+            </select>
+          </div>
+
+          <!-- Slider / Accidentals Enable -->
+          <div class="settings-item">
+            <label class="settings-item-label" for="chk-accidentals">
+              <input type="checkbox" id="chk-accidentals" checked>
+              <span class="checkbox-custom">✓</span>
+              Include Accidentals (Slide In)
+            </label>
+          </div>
+
+          <!-- Audio Enable -->
+          <div class="settings-item">
+            <label class="settings-item-label" for="chk-sound">
+              <input type="checkbox" id="chk-sound" checked>
+              <span class="checkbox-custom">✓</span>
+              Enable Audio Synthesizer
+            </label>
+          </div>
+
+          <!-- Show Note Labels on Harmonica -->
+          <div class="settings-item">
+            <label class="settings-item-label" for="chk-labels">
+              <input type="checkbox" id="chk-labels" checked>
+              <span class="checkbox-custom">✓</span>
+              Show Notes on Harmonica
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Sheet Music & Interactive Harmonica -->
+    <div style="display: flex; flex-direction: column; gap: 2rem;">
+      
+      <!-- Sheet Music Card -->
+      <div class="card sheet-card">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          Current Note
+        </h2>
+        
+        <div class="music-paper-container" id="sheet-container">
+          <!-- abcjs renders here -->
+          <div style="color: var(--text-dark); font-family: var(--font-mono); font-size: 0.9rem;">Loading sheet music...</div>
+        </div>
+
+        <!-- Feedback Overlay -->
+        <div id="feedback-overlay" class="feedback-overlay">
+          <div id="feedback-icon" class="feedback-icon">✓</div>
+          <div id="feedback-text" class="feedback-text">Correct!</div>
+          <div id="feedback-subtext" class="feedback-subtext">Hole 4 Blow • C5</div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; width: 100%; margin-top: 0.5rem; justify-content: flex-end;">
+          <button id="btn-play-note" class="btn-toggle" style="border: 1px solid rgba(255,255,255,0.08); font-size: 0.9rem;">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+            Hear Pitch
+          </button>
+          <button id="btn-skip" class="btn-primary" style="margin-top: 0;">
+            Skip Note
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Harmonica Controller Card -->
+      <div class="card harmonica-card" id="harmonica-controller">
+        <h2>
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M12 8v8"/><path d="M8 12h8"/></svg>
+          Harmonica Control Deck
+        </h2>
+
+        <!-- Active State Toggles -->
+        <div style="display: grid; grid-template-columns: 1.2fr 1.8fr; gap: 1.5rem; width: 100%; margin-bottom: 1.5rem;">
+          
+          <!-- Breath State Toggle (Blow/Draw) -->
+          <div class="control-group">
+            <span class="control-label">Breath Direction (Spacebar)</span>
+            <div class="btn-group">
+              <button id="btn-breath-blow" class="btn-toggle active-blow">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                BLOW
+              </button>
+              <button id="btn-breath-draw" class="btn-toggle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
+                DRAW
+              </button>
+            </div>
+          </div>
+
+          <!-- Slide State Switch -->
+          <div class="control-group">
+            <span class="control-label">Slider Button (Hold Shift / Tap S)</span>
+            <div id="slide-switch" class="slide-switch-container">
+              <div class="slide-switch-label">
+                <span class="slide-switch-title">Slide Button</span>
+                <span id="slide-desc" class="slide-switch-desc">Slide Out (Natural Scale)</span>
+              </div>
+              <div class="toggle-switch"></div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- The Harmonica Scroll Wrapper for Mobile -->
+        <div class="harmonica-scroll-wrapper">
+          <!-- The Harmonica Visual Model -->
+          <div class="harmonica-assembly blow-state" id="harmonica-assembly">
+            <div class="harmonica-body">
+              <!-- 12 Holes will be injected dynamically to handle labels and note highlights properly -->
+            </div>
+            <!-- Slide button handle visualizer -->
+            <div id="harmonica-slide-visual" class="harmonica-slide-button"></div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: var(--text-muted); font-style: italic; margin-top: 0.5rem; display: flex; align-items: center; gap: 0.35rem;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>
+          Select breath & slide style, then click a hole to play and submit your answer!
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- Bottom: Keyboard Shortcuts Legend -->
+    <div class="legend-section card">
+      <h2>
+        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="6" y1="8" x2="6.01" y2="8"/><line x1="10" y1="8" x2="10.01" y2="8"/><line x1="14" y1="8" x2="14.01" y2="8"/><line x1="18" y1="8" x2="18.01" y2="8"/><line x1="6" y1="12" x2="6.01" y2="12"/><line x1="10" y1="12" x2="10.01" y2="12"/><line x1="14" y1="12" x2="14.01" y2="12"/><line x1="18" y1="12" x2="18.01" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></svg>
+        Keyboard Dashboard & Shortcuts
+      </h2>
+      <div class="legend-grid">
+        
+        <div class="legend-card">
+          <h3>
+            <span class="shortcut-badge">Spacebar</span>
+            Toggle Breath
+          </h3>
+          <p>Instantly swaps between <strong>Blow</strong> (Exhale) and <strong>Draw</strong> (Inhale) states. Re-colors the board to match airflow.</p>
+        </div>
+
+        <div class="legend-card">
+          <h3>
+            <span class="shortcut-badge">Shift</span> or <span class="shortcut-badge">S</span>
+            Toggle Slide
+          </h3>
+          <p>Hold down <span class="shortcut-badge">Shift</span> or tap <span class="shortcut-badge">S</span> to push the slider in. This raises all pitches by 1 semitone.</p>
+        </div>
+
+        <div class="legend-card">
+          <h3>
+            <span class="shortcut-badge">1</span> - <span class="shortcut-badge">=</span>
+            Play Holes 1-12
+          </h3>
+          <p>Press numerical keys to activate specific holes: 
+            <span class="shortcut-badge">1</span>-<span class="shortcut-badge">9</span>, 
+            <span class="shortcut-badge">0</span> (Hole 10), 
+            <span class="shortcut-badge">-</span> (Hole 11), and 
+            <span class="shortcut-badge">=</span> (Hole 12).
+          </p>
+        </div>
+
+        <div class="legend-card">
+          <h3>
+            <span class="shortcut-badge">K</span> or <span class="shortcut-badge">P</span>
+            Auditory Aids
+          </h3>
+          <p>Press <span class="shortcut-badge">K</span> or <span class="shortcut-badge">P</span> to replay the sound pitch of the current sheet note without skipping.</p>
+        </div>
+
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Main app script -->
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,970 @@
+/* Import modern typography */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* Color Palette */
+  --bg-gradient-start: #070a13;
+  --bg-gradient-end: #0f172a;
+  --card-bg: rgba(30, 41, 59, 0.45);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-glow: rgba(99, 102, 241, 0.15);
+  
+  --primary: #8b5cf6;
+  --primary-glow: rgba(139, 92, 246, 0.4);
+  --primary-hover: #a78bfa;
+  
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --text-dark: #475569;
+  
+  --success: #10b981;
+  --success-glow: rgba(16, 185, 129, 0.4);
+  --error: #f43f5e;
+  --error-glow: rgba(244, 63, 94, 0.4);
+  
+  /* Harmonica Specific Styling */
+  --color-blow: #f59e0b; /* Amber */
+  --color-blow-glow: rgba(245, 158, 11, 0.45);
+  --color-draw: #06b6d4; /* Cyan */
+  --color-draw-glow: rgba(6, 182, 212, 0.45);
+  
+  --slide-active: #ec4899; /* Pink */
+  --slide-active-glow: rgba(236, 72, 153, 0.5);
+  
+  /* Font Families */
+  --font-sans: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  
+  /* Transitions */
+  --transition-smooth: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  --transition-fast: all 0.15s ease;
+}
+
+/* Base resets & styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: radial-gradient(circle at 50% 0%, var(--bg-gradient-start), var(--bg-gradient-end));
+  color: var(--text-main);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 2rem 1rem;
+  overflow-x: hidden;
+}
+
+/* Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: var(--bg-gradient-start);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--text-dark);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2rem;
+  animation: fadeInDown 0.6s ease;
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  letter-spacing: -0.05em;
+  background: linear-gradient(135deg, #fff 30%, var(--primary-hover) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+
+h1 span.badge {
+  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  background: linear-gradient(135deg, var(--primary), var(--slide-active));
+  color: white;
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  -webkit-text-fill-color: initial;
+  text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  vertical-align: middle;
+}
+
+header p {
+  color: var(--text-muted);
+  margin-top: 0.5rem;
+  font-size: 1.1rem;
+  font-weight: 300;
+}
+
+/* App Main Container Layout */
+.app-container {
+  display: grid;
+  grid-template-columns: 1.2fr 1.8fr;
+  gap: 2rem;
+  width: 100%;
+  max-width: 1280px;
+  animation: fadeInUp 0.6s ease;
+  margin-bottom: 3rem;
+}
+
+@media (max-width: 1024px) {
+  .app-container {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Glassmorphism Card Style */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 24px;
+  backdrop-filter: blur(16px);
+  padding: 1.75rem;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.3), 
+              inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  transition: var(--transition-smooth);
+}
+
+.card:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.4), 
+              0 0 40px -10px var(--card-glow);
+}
+
+/* Section Titles */
+h2 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--text-main);
+  border-left: 3px solid var(--primary);
+  padding-left: 0.75rem;
+}
+
+/* Score Panel Styles */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.stat-item {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 1rem;
+  text-align: center;
+  transition: var(--transition-smooth);
+}
+
+.stat-item:hover {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.stat-label {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 0.25rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  color: var(--text-main);
+}
+
+.stat-value.highlight {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Sheet Music Card Styling */
+.sheet-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+}
+
+/* High contrast clean paper container for sheet music */
+.music-paper-container {
+  background: #fdfdfd;
+  color: #0f172a; /* Explicit dark color so SVG currentColor renders black notes instead of white */
+  width: 100%;
+  border-radius: 16px;
+  padding: 1.5rem 1rem;
+  margin: 1rem 0;
+  min-height: 180px;
+  position: relative;
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05),
+              0 4px 12px rgba(0, 0, 0, 0.15);
+  border: 1px solid rgba(0,0,0,0.1);
+  transition: var(--transition-smooth);
+  text-align: center;
+  display: block;
+}
+
+/* Styled ABCJS rendered outputs */
+.music-paper-container svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0 auto;
+}
+
+/* Feedback Overlay inside sheet music */
+.feedback-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: var(--transition-smooth);
+  border-radius: 16px;
+  z-index: 10;
+}
+
+.feedback-overlay.active {
+  opacity: 1;
+  pointer-events: all;
+}
+
+.feedback-icon {
+  font-size: 3rem;
+  margin-bottom: 0.5rem;
+  transform: scale(0.5);
+  transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.feedback-overlay.active .feedback-icon {
+  transform: scale(1);
+}
+
+.feedback-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  text-align: center;
+  padding: 0 1rem;
+}
+
+.feedback-subtext {
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  margin-top: 0.25rem;
+  font-family: var(--font-mono);
+}
+
+.feedback-overlay.success {
+  border: 2px solid var(--success);
+  box-shadow: 0 0 30px var(--success-glow);
+}
+.feedback-overlay.success .feedback-text {
+  color: var(--success);
+}
+
+.feedback-overlay.error {
+  border: 2px solid var(--error);
+  box-shadow: 0 0 30px var(--error-glow);
+}
+.feedback-overlay.error .feedback-text {
+  color: var(--error);
+}
+
+/* Active Controls Panel (Breath / Slider) */
+.controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.control-label {
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+/* Button Group (Blow/Draw) */
+.btn-group {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  background: rgba(15, 23, 42, 0.5);
+  padding: 0.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.btn-toggle {
+  background: transparent;
+  border: none;
+  padding: 0.75rem 1rem;
+  border-radius: 11px;
+  color: var(--text-muted);
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  transition: var(--transition-smooth);
+}
+
+.btn-toggle svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2.5;
+  transition: var(--transition-smooth);
+}
+
+/* Blow active state styling */
+.btn-toggle.active-blow {
+  background: var(--color-blow);
+  color: #000;
+  box-shadow: 0 4px 15px var(--color-blow-glow);
+}
+.btn-toggle.active-blow svg {
+  transform: rotate(-45deg);
+}
+
+/* Draw active state styling */
+.btn-toggle.active-draw {
+  background: var(--color-draw);
+  color: #000;
+  box-shadow: 0 4px 15px var(--color-draw-glow);
+}
+.btn-toggle.active-draw svg {
+  transform: rotate(135deg);
+}
+
+/* Slide switch styling */
+.slide-switch-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(15, 23, 42, 0.4);
+  padding: 0.85rem 1.25rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.slide-switch-container:hover {
+  background: rgba(15, 23, 42, 0.6);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.slide-switch-container.active {
+  border-color: var(--slide-active);
+  box-shadow: 0 0 15px rgba(236, 72, 153, 0.15);
+}
+
+.slide-switch-label {
+  display: flex;
+  flex-direction: column;
+}
+
+.slide-switch-title {
+  font-weight: 600;
+  font-size: 1rem;
+}
+
+.slide-switch-desc {
+  font-size: 0.75rem;
+  color: var(--text-muted);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 52px;
+  height: 28px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 9999px;
+  transition: var(--transition-smooth);
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 22px;
+  height: 22px;
+  background: white;
+  border-radius: 50%;
+  transition: var(--transition-smooth);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+.slide-switch-container.active .toggle-switch {
+  background: var(--slide-active);
+}
+
+.slide-switch-container.active .toggle-switch::after {
+  left: 27px;
+}
+
+/* Settings Checkbox / Range Controls */
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  margin-top: 1rem;
+}
+
+.settings-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.settings-item-label {
+  font-size: 0.95rem;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.settings-item-label input[type="checkbox"] {
+  display: none;
+}
+
+.checkbox-custom {
+  width: 20px;
+  height: 20px;
+  border: 2px solid var(--text-dark);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: var(--transition-smooth);
+  color: transparent;
+  font-weight: bold;
+  font-size: 0.75rem;
+}
+
+.settings-item-label input[type="checkbox"]:checked + .checkbox-custom {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+}
+
+/* Dropdown select custom styling */
+.select-custom {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  color: var(--text-main);
+  padding: 0.4rem 0.75rem;
+  font-family: var(--font-sans);
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+  transition: var(--transition-smooth);
+}
+
+.select-custom:focus {
+  border-color: var(--primary);
+  box-shadow: 0 0 10px var(--primary-glow);
+}
+
+/* Harmonica Scroll Wrapper for Mobile */
+.harmonica-scroll-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  padding: 0.5rem 0;
+  margin: 0.5rem 0;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-dark) transparent;
+}
+
+.harmonica-scroll-wrapper::-webkit-scrollbar {
+  height: 6px;
+}
+.harmonica-scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.harmonica-scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--text-dark);
+  border-radius: 9999px;
+}
+.harmonica-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Harmonica Visual Component Card */
+.harmonica-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 2rem;
+  position: relative;
+}
+
+/* Harmonica Housing (Metallic Case) */
+.harmonica-assembly {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 820px;
+  margin: 1.5rem 0;
+  transition: var(--transition-smooth);
+  padding-right: 45px; /* Space for the slide button */
+}
+
+.harmonica-body {
+  position: relative;
+  flex-grow: 1;
+  min-width: 680px; /* Force minimum size on mobile for tap targets */
+  background: linear-gradient(180deg, #334155 0%, #1e293b 45%, #0f172a 50%, #1e293b 55%, #334155 100%);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5),
+              inset 0 2px 4px rgba(255, 255, 255, 0.15);
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  padding: 12px 16px;
+  gap: 8px;
+  z-index: 2;
+  transition: var(--transition-smooth);
+}
+
+/* Top and bottom metal cover-plate highlights */
+.harmonica-body::before, .harmonica-body::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 6px;
+  pointer-events: none;
+}
+.harmonica-body::before {
+  top: 0;
+  background: linear-gradient(180deg, rgba(255,255,255,0.2) 0%, rgba(255,255,255,0) 100%);
+  border-radius: 12px 12px 0 0;
+}
+.harmonica-body::after {
+  bottom: 0;
+  background: linear-gradient(360deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0) 100%);
+  border-radius: 0 0 12px 12px;
+}
+
+/* Visual Harmonica Slide Button */
+.harmonica-slide-button {
+  position: absolute;
+  right: 12px;
+  width: 32px;
+  height: 24px;
+  background: linear-gradient(90deg, #94a3b8 0%, #cbd5e1 50%, #475569 100%);
+  border-radius: 0 6px 6px 0;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-left: none;
+  box-shadow: 4px 2px 8px rgba(0,0,0,0.3);
+  transform: translateX(0);
+  transition: transform 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-right: 4px;
+  cursor: pointer;
+}
+
+/* Slide button has a pink indicator dot that glows when pressed */
+.harmonica-slide-button::after {
+  content: '';
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--text-dark);
+  transition: var(--transition-smooth);
+}
+
+.harmonica-assembly.slide-in .harmonica-slide-button {
+  transform: translateX(-16px); /* Slide is pressed in! */
+  background: linear-gradient(90deg, #ec4899 0%, #f472b6 50%, #db2777 100%);
+  box-shadow: 0 0 15px var(--slide-active-glow);
+}
+
+.harmonica-assembly.slide-in .harmonica-slide-button::after {
+  background: white;
+  box-shadow: 0 0 8px white;
+}
+
+/* Individual Harmonica Hole Chamber */
+.harmonica-hole {
+  aspect-ratio: 1 / 2.3;
+  background: #090d16;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: inset 0 6px 12px rgba(0,0,0,0.8);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 4px;
+  cursor: pointer;
+  position: relative;
+  transition: var(--transition-smooth);
+}
+
+.harmonica-hole:hover {
+  background: #111827;
+  border-color: rgba(255,255,255,0.15);
+}
+
+/* Label for the Hole (Number 1-12) */
+.hole-number {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  transition: var(--transition-smooth);
+}
+
+/* Keyboard Shortcut Tip Overlay */
+.keyboard-key {
+  position: absolute;
+  top: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  opacity: 0.6;
+  transition: var(--transition-smooth);
+  pointer-events: none;
+}
+
+.harmonica-hole:hover .keyboard-key {
+  opacity: 1;
+  color: var(--text-main);
+  background: var(--primary);
+  border-color: var(--primary-hover);
+}
+
+/* Note Display inside the chamber */
+.hole-notes-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  flex-grow: 1;
+  width: 100%;
+  opacity: 0;
+  transform: scale(0.9);
+  transition: var(--transition-smooth);
+  pointer-events: none;
+}
+
+/* Show note names when setting is toggled on */
+.show-note-names .hole-notes-container {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.hole-note {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-dark);
+  transition: var(--transition-smooth);
+  padding: 1px 3px;
+  border-radius: 3px;
+}
+
+/* Note style highlighting depending on current breath state */
+.hole-note.blow-note {
+  color: rgba(245, 158, 11, 0.45);
+}
+.hole-note.draw-note {
+  color: rgba(6, 182, 212, 0.45);
+}
+
+/* Active Highlight Styles for holes */
+/* Hole glow when Blow (Exhale) state is active and note matches */
+.harmonica-assembly.blow-state .harmonica-hole:hover,
+.harmonica-assembly.blow-state .harmonica-hole.active-playing {
+  border-color: var(--color-blow);
+  box-shadow: 0 0 15px var(--color-blow-glow), 
+              inset 0 0 10px rgba(245, 158, 11, 0.2);
+}
+
+.harmonica-assembly.blow-state .harmonica-hole:hover .hole-number,
+.harmonica-assembly.blow-state .harmonica-hole.active-playing .hole-number {
+  color: var(--color-blow);
+  text-shadow: 0 0 8px var(--color-blow-glow);
+}
+
+.harmonica-assembly.blow-state .harmonica-hole:hover .hole-note.blow-note,
+.harmonica-assembly.blow-state .harmonica-hole.active-playing .hole-note.blow-note {
+  color: var(--color-blow);
+  font-weight: 700;
+  text-shadow: 0 0 8px var(--color-blow-glow);
+}
+
+/* Hole glow when Draw (Inhale) state is active and note matches */
+.harmonica-assembly.draw-state .harmonica-hole:hover,
+.harmonica-assembly.draw-state .harmonica-hole.active-playing {
+  border-color: var(--color-draw);
+  box-shadow: 0 0 15px var(--color-draw-glow), 
+              inset 0 0 10px rgba(6, 182, 212, 0.2);
+}
+
+.harmonica-assembly.draw-state .harmonica-hole:hover .hole-number,
+.harmonica-assembly.draw-state .harmonica-hole.active-playing .hole-number {
+  color: var(--color-draw);
+  text-shadow: 0 0 8px var(--color-draw-glow);
+}
+
+.harmonica-assembly.draw-state .harmonica-hole:hover .hole-note.draw-note,
+.harmonica-assembly.draw-state .harmonica-hole.active-playing .hole-note.draw-note {
+  color: var(--color-draw);
+  font-weight: 700;
+  text-shadow: 0 0 8px var(--color-draw-glow);
+}
+
+/* Correct / Wrong animation tags on holes during feedback */
+.harmonica-hole.correct-flash {
+  animation: flashSuccess 0.4s ease;
+}
+.harmonica-hole.wrong-flash {
+  animation: flashError 0.4s ease;
+}
+
+/* Action button (Next Note / Skip) */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+  color: white;
+  border: none;
+  padding: 0.85rem 2rem;
+  border-radius: 14px;
+  font-family: var(--font-sans);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(139, 92, 246, 0.3);
+  transition: var(--transition-smooth);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 25px rgba(139, 92, 246, 0.4);
+  background: linear-gradient(135deg, var(--primary-hover) 0%, var(--primary) 100%);
+}
+
+.btn-primary:active {
+  transform: translateY(1px);
+}
+
+/* Keyboard bindings summary section */
+.legend-section {
+  grid-column: span 2;
+  width: 100%;
+  max-width: 1280px;
+  margin-top: -1rem;
+}
+
+@media (max-width: 1024px) {
+  .legend-section {
+    grid-column: span 1;
+  }
+}
+
+.legend-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1rem;
+}
+
+.legend-card {
+  background: rgba(15, 23, 42, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  border-radius: 16px;
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.legend-card h3 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-main);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.legend-card p {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.shortcut-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  padding: 2px 6px;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--text-main);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.3);
+}
+
+/* Animations */
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes flashSuccess {
+  0%, 100% { border-color: rgba(255, 255, 255, 0.05); }
+  50% { 
+    border-color: var(--success);
+    box-shadow: 0 0 25px var(--success-glow), inset 0 0 10px rgba(16, 185, 129, 0.3);
+  }
+}
+
+@keyframes flashError {
+  0%, 100% { border-color: rgba(255, 255, 255, 0.05); }
+  50% { 
+    border-color: var(--error);
+    box-shadow: 0 0 25px var(--error-glow), inset 0 0 10px rgba(244, 63, 94, 0.3);
+  }
+}
+
+/* Mobile Responsiveness Media Queries */
+@media (max-width: 768px) {
+  body {
+    padding: 1rem 0.5rem;
+  }
+  
+  header {
+    margin-bottom: 1.25rem;
+  }
+  
+  h1 {
+    font-size: 1.75rem;
+  }
+  
+  header p {
+    font-size: 0.85rem;
+  }
+  
+  .card {
+    padding: 1.25rem;
+    border-radius: 18px;
+  }
+  
+  h2 {
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+  }
+  
+  .stats-grid {
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+  }
+  
+  .stat-item {
+    padding: 0.75rem 0.5rem;
+  }
+  
+  .stat-value {
+    font-size: 1.35rem;
+  }
+  
+  .harmonica-card {
+    padding: 1.25rem 0.75rem;
+  }
+  
+  .harmonica-assembly {
+    margin: 1rem 0;
+  }
+  
+  /* Keyboard Shortcuts are not applicable on mobile, so hide to declutter layout */
+  .legend-section {
+    display: none;
+  }
+}
