@@ -337,11 +337,17 @@ function nextQuestion() {
  */
 function renderSheetMusic(abcNote) {
   const abcString = `X:1\nL:1/4\nK:C\n${abcNote}4`;
+  
+  // Responsive scale to prevent sheet music overflow on mobile screens
+  const isMobile = window.innerWidth <= 768;
+  const renderScale = isMobile ? 1.05 : 1.4;
+  const renderWidth = isMobile ? 220 : 260;
+  
   try {
     ABCJS.renderAbc("sheet-container", abcString, {
-      scale: 1.4,
+      scale: renderScale,
       add_classes: true,
-      staffwidth: 260
+      staffwidth: renderWidth
     });
   } catch (err) {
     console.error("ABCJS render error: ", err);
