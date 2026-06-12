@@ -660,6 +660,16 @@ function initEventListeners() {
     setSlideState(!currentGameState.slide);
   });
   
+  // Visual slide button on the harmonica body itself
+  const visualSlide = document.getElementById('harmonica-slide-visual');
+  if (visualSlide) {
+    visualSlide.addEventListener('click', (e) => {
+      e.stopPropagation(); // Prevent clicks from leaking to underlying holes
+      initAudio();
+      setSlideState(!currentGameState.slide);
+    });
+  }
+  
   // Range dropdown
   document.getElementById('select-range').addEventListener('change', (e) => {
     currentSettings.range = e.target.value;
