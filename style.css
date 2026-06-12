@@ -125,6 +125,10 @@ header p {
   margin-bottom: 3rem;
 }
 
+.app-container > div {
+  min-width: 0; /* Prevents grid children from stretching columns past viewport bounds */
+}
+
 @media (max-width: 1024px) {
   .app-container {
     grid-template-columns: 1fr;
@@ -534,6 +538,8 @@ h2 {
 /* Harmonica Scroll Wrapper for Mobile */
 .harmonica-scroll-wrapper {
   width: 100%;
+  max-width: 100%;
+  min-width: 0;
   overflow-x: auto;
   padding: 0.5rem 0;
   margin: 0.5rem 0;
