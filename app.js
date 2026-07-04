@@ -35,6 +35,37 @@ const currentGameState = {
 let audioCtx = null;
 let currentOscillator = null;
 
+// --- Learn a Song Mode State & Database ---
+let currentMode = 'quiz'; // 'quiz' or 'song'
+let currentSongKey = 'twinkle';
+let songNotes = []; // Extracted note items: { midi, duration }
+let currentSongNoteIndex = 0;
+
+let playbackInterval = null;
+let isPlayingSong = false;
+let playbackTempoBpm = 100;
+
+// Preloaded Songs Database (Transposed to Key of C, playable on C4-C7 range)
+const SONG_DATABASE = {
+  twinkle: {
+    name: "Twinkle Twinkle Little Star",
+    abc: "X:1\nL:1/4\nK:C\nC C G G | A A G2 | F F E E | D D C2 | G G F F | E E D2 | G G F F | E E D2 | C C G G | A A G2 | F F E E | D D C2"
+  },
+  ode: {
+    name: "Ode to Joy",
+    abc: "X:1\nL:1/4\nK:C\nE E F G | G F E D | C C D E | E3/2D/2 D2 | E E F G | G F E D | C C D E | D3/2C/2 C2 | D D E C | D E/2F/2 E C | D E/2F/2 E D | C D G2 | E E F G | G F E D | C C D E | D3/2C/2 C2"
+  },
+  birthday: {
+    name: "Happy Birthday",
+    abc: "X:1\nL:1/4\nK:C\nC3/2C/2 D C F | E2 z | C3/2C/2 D C G | F2 z | C3/2C/2 c A F E | D2 B3/2B/2 A F G | F2"
+  },
+  grace: {
+    name: "Amazing Grace",
+    abc: "X:1\nL:1/4\nK:C\nC | F2 A/2F/2 A2 | G2 F | D2 C2 | C | F2 A/2F/2 A2 | G2 A | c3 | A | c2 A/2F/2 A2 | G2 F | D2 C2 | C | F2 A/2F/2 F2 | G2 F"
+  }
+};
+
+
 // --- 1. Harmonica Note Layout Formulas ---
 
 /**
@@ -360,6 +391,11 @@ function renderSheetMusic(abcNote) {
 function submitAnswer(hole) {
   if (currentGameState.isTransitioning) return;
   
+  if (currentMode === 'song') {
+    submitSongNote(hole);
+    return;
+  }
+  
   const breath = currentGameState.breath;
   const slide = currentGameState.slide;
   
@@ -453,6 +489,338 @@ function submitAnswer(hole) {
   }
   
   updateStatsUI();
+}
+
+// --- 4b. Learn a Song Mode Core Logic ---
+
+/**
+ * Toggles the app mode between Quiz and Song Learning mode.
+ */
+function switchMode(mode) {
+  if (currentMode === mode) return;
+  
+  // Stop any active song playback
+  stopSongPlayback();
+  
+  currentMode = mode;
+  
+  const quizBtn = document.getElementById('btn-mode-quiz');
+  const songBtn = document.getElementById('btn-mode-song');
+  const songPanel = document.getElementById('song-control-panel');
+  const playButtons = document.querySelector('.sheet-buttons-container');
+  
+  if (mode === 'song') {
+    quizBtn.classList.remove('active');
+    songBtn.classList.add('active');
+    songPanel.classList.remove('hidden');
+    if (playButtons) playButtons.classList.add('hidden'); // Hide Skip/Hear Pitch buttons in Song mode
+    
+    // Load the currently selected song
+    loadActiveSong();
+  } else {
+    quizBtn.classList.add('active');
+    songBtn.classList.remove('active');
+    songPanel.classList.add('hidden');
+    if (playButtons) playButtons.classList.remove('hidden'); // Show Skip/Hear Pitch buttons in Quiz mode
+    
+    // Reset quiz stats and trigger a new question
+    nextQuestion();
+  }
+}
+
+/**
+ * Loads the currently selected preloaded song (or custom song editor).
+ */
+function loadActiveSong() {
+  const songSelector = document.getElementById('select-song');
+  const customLoader = document.getElementById('custom-song-loader');
+  const songKey = songSelector.value;
+  
+  currentSongKey = songKey;
+  
+  if (songKey === 'custom') {
+    customLoader.classList.remove('hidden');
+    // Render an empty staff or load whatever is in the textarea
+    const customAbc = document.getElementById('txt-custom-abc').value.trim();
+    if (customAbc) {
+      loadCustomSong(customAbc);
+    } else {
+      // Clear sheet music staff
+      document.getElementById('sheet-container').innerHTML = 
+        `<div style="color: var(--text-muted); font-family: var(--font-sans); font-size: 0.9rem; padding: 1rem;">Paste your ABC notation below and click Load!</div>`;
+      songNotes = [];
+      updateSongProgressUI();
+    }
+  } else {
+    customLoader.classList.add('hidden');
+    const song = SONG_DATABASE[songKey];
+    if (song) {
+      loadSongString(song.abc, song.name);
+    }
+  }
+}
+
+/**
+ * Loads a song from a raw ABC notation string.
+ */
+function loadSongString(abcString, songName) {
+  stopSongPlayback();
+  
+  try {
+    // Render the song using ABCJS
+    const visualObjs = ABCJS.renderAbc("sheet-container", abcString, {
+      scale: window.innerWidth <= 768 ? 1.05 : 1.4,
+      add_classes: true,
+      staffwidth: window.innerWidth <= 768 ? 220 : 260
+    });
+    
+    // Extract the note MIDI sequence
+    songNotes = extractNotesFromVisualObj(visualObjs);
+    currentSongNoteIndex = 0;
+    
+    if (songNotes.length === 0) {
+      alert("No notes could be parsed from this song. Please check the ABC syntax!");
+      return;
+    }
+    
+    // Highlight the starting note
+    highlightActiveSongNote();
+    updateSongProgressUI();
+    
+  } catch (err) {
+    console.error("Error loading song: ", err);
+    alert("Failed to render the song. Make sure it is valid ABC notation.");
+  }
+}
+
+/**
+ * Parses custom song ABC notation and loads it.
+ */
+function loadCustomSong(customAbc) {
+  // Wrap simple raw note letters inside a minimal ABC header if needed
+  let abcString = customAbc;
+  if (!abcString.includes("K:")) {
+    // Treat as raw notes, auto wrap in basic ABC structure
+    abcString = `X:1\nL:1/4\nK:C\n${customAbc}`;
+  }
+  loadSongString(abcString, "Custom Song");
+}
+
+/**
+ * Extracts note event details sequentially from the rendered abcjs visualObj.
+ */
+function extractNotesFromVisualObj(visualObjs) {
+  const notes = [];
+  if (!visualObjs || !visualObjs[0] || !visualObjs[0].lines) return notes;
+  
+  visualObjs[0].lines.forEach(line => {
+    if (!line.staff) return;
+    line.staff.forEach(staff => {
+      if (!staff.voices) return;
+      staff.voices.forEach(voice => {
+        voice.forEach(event => {
+          // Look for notes, filter out rests (rests don't have event.pitches)
+          if (event.el_type === "note" && event.pitches && event.pitches.length > 0) {
+            notes.push({
+              midi: event.pitches[0].pitch,
+              duration: event.duration
+            });
+          }
+        });
+      });
+    });
+  });
+  return notes;
+}
+
+/**
+ * Highlights the note at currentSongNoteIndex in the sheet music SVG
+ * and plays its sound to guide the user.
+ */
+function highlightActiveSongNote() {
+  const noteElements = document.querySelectorAll('#sheet-container .abcjs-note');
+  
+  // Clear previous active styling
+  noteElements.forEach(el => {
+    el.classList.remove('active-note-head');
+    el.setAttribute('fill', 'currentColor');
+    el.setAttribute('stroke', 'none');
+  });
+  
+  if (noteElements.length > 0 && currentSongNoteIndex < noteElements.length) {
+    const activeEl = noteElements[currentSongNoteIndex];
+    activeEl.classList.add('active-note-head');
+    activeEl.setAttribute('fill', 'var(--primary)');
+    activeEl.setAttribute('stroke', 'var(--primary)');
+    
+    // Auto-scroll long songs horizontally to keep the active note centered
+    activeEl.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    
+    // Play pitch audio automatically if enabled and we are not in automated playback mode
+    if (currentSettings.sound && !isPlayingSong) {
+      // Small timeout to prevent clipping if click sound is playing
+      setTimeout(() => {
+        if (currentMode === 'song' && !isPlayingSong) {
+          playNoteSound(songNotes[currentSongNoteIndex].midi, 0.8);
+        }
+      }, 50);
+    }
+  }
+}
+
+/**
+ * Processes note entry when playing a song.
+ */
+function submitSongNote(hole) {
+  if (songNotes.length === 0 || isPlayingSong || currentGameState.isTransitioning) return;
+  
+  const breath = currentGameState.breath;
+  const slide = currentGameState.slide;
+  const playedMidi = getNoteForHole(hole, breath, slide);
+  
+  const targetNote = songNotes[currentSongNoteIndex];
+  const correct = (playedMidi === targetNote.midi);
+  
+  const holeElement = document.querySelector(`.harmonica-hole[data-hole="${hole}"]`);
+  
+  // Play note sound played
+  playNoteSound(playedMidi, 0.8);
+  
+  if (correct) {
+    if (holeElement) {
+      holeElement.classList.add('correct-flash');
+      setTimeout(() => holeElement.classList.remove('correct-flash'), 300);
+    }
+    
+    currentSongNoteIndex++;
+    updateSongProgressUI();
+    
+    if (currentSongNoteIndex >= songNotes.length) {
+      showSongCompletionMessage();
+    } else {
+      highlightActiveSongNote();
+    }
+  } else {
+    if (holeElement) {
+      holeElement.classList.add('wrong-flash');
+      setTimeout(() => holeElement.classList.remove('wrong-flash'), 300);
+    }
+    // Don't advance, let them try again immediately
+  }
+}
+
+/**
+ * Updates the progress indicator values and bar fill width.
+ */
+function updateSongProgressUI() {
+  const total = songNotes.length;
+  const current = currentSongNoteIndex;
+  
+  const progressText = document.getElementById('lbl-song-progress');
+  const progressFill = document.getElementById('progress-bar-fill');
+  
+  if (progressText) {
+    progressText.textContent = total > 0 ? `Note ${current} of ${total}` : 'Note 0 of 0';
+  }
+  if (progressFill) {
+    const percentage = total > 0 ? (current / total) * 100 : 0;
+    progressFill.style.width = `${percentage}%`;
+  }
+}
+
+/**
+ * Plays a congratulations overlay when the melody finishes.
+ */
+function showSongCompletionMessage() {
+  const overlay = document.getElementById('feedback-overlay');
+  const icon = document.getElementById('feedback-icon');
+  const text = document.getElementById('feedback-text');
+  const subtext = document.getElementById('feedback-subtext');
+  
+  overlay.className = "feedback-overlay success active";
+  icon.textContent = "🎉";
+  text.textContent = "Song Completed!";
+  subtext.textContent = "Awesome job! Click anywhere to reset.";
+  
+  currentGameState.isTransitioning = true;
+  
+  // Dismiss listener
+  overlay.addEventListener('click', function dismiss() {
+    overlay.removeEventListener('click', dismiss);
+    overlay.classList.remove('active');
+    currentGameState.isTransitioning = false;
+    resetSong();
+  });
+}
+
+/**
+ * Resets the current song back to note index 0.
+ */
+function resetSong() {
+  stopSongPlayback();
+  currentSongNoteIndex = 0;
+  highlightActiveSongNote();
+  updateSongProgressUI();
+}
+
+/**
+ * Playback sequencing player (Listen Mode).
+ */
+function toggleSongPlayback() {
+  if (songNotes.length === 0) return;
+  
+  const playBtn = document.getElementById('btn-song-play');
+  const playIcon = document.getElementById('svg-play');
+  const playText = document.getElementById('txt-play');
+  
+  if (isPlayingSong) {
+    stopSongPlayback();
+  } else {
+    isPlayingSong = true;
+    if (playText) playText.textContent = "Pause";
+    if (playIcon) {
+      playIcon.innerHTML = `<rect x="4" y="4" width="4" height="16" fill="currentColor"></rect><rect x="12" y="4" width="4" height="16" fill="currentColor"></rect>`;
+    }
+    
+    // Start index back at 0 if we were at the end
+    if (currentSongNoteIndex >= songNotes.length) {
+      currentSongNoteIndex = 0;
+    }
+    
+    // Interval calculations based on BPM
+    // One quarter note beat in ms is: 60000 / BPM
+    const intervalMs = (60000 / playbackTempoBpm);
+    
+    playbackInterval = setInterval(() => {
+      if (currentSongNoteIndex < songNotes.length) {
+        highlightActiveSongNote();
+        playNoteSound(songNotes[currentSongNoteIndex].midi, intervalMs / 1000 * 0.9);
+        currentSongNoteIndex++;
+        updateSongProgressUI();
+      } else {
+        stopSongPlayback();
+      }
+    }, intervalMs);
+  }
+}
+
+/**
+ * Stops melody playback and resets play button state.
+ */
+function stopSongPlayback() {
+  if (playbackInterval) {
+    clearInterval(playbackInterval);
+    playbackInterval = null;
+  }
+  isPlayingSong = false;
+  
+  const playIcon = document.getElementById('svg-play');
+  const playText = document.getElementById('txt-play');
+  
+  if (playText) playText.textContent = "Listen";
+  if (playIcon) {
+    playIcon.innerHTML = `<polygon points="5 3 19 12 5 21 5 3"/>`;
+  }
 }
 
 // --- 5. UI Rendering & Sync Helpers ---
@@ -625,6 +993,61 @@ function resetStats() {
 // --- 6. Event Listeners & Initialization ---
 
 function initEventListeners() {
+  // Mode Selection Toggles
+  document.getElementById('btn-mode-quiz').addEventListener('click', () => {
+    initAudio();
+    switchMode('quiz');
+  });
+  document.getElementById('btn-mode-song').addEventListener('click', () => {
+    initAudio();
+    switchMode('song');
+  });
+  
+  // Song selection dropdown change
+  document.getElementById('select-song').addEventListener('change', () => {
+    initAudio();
+    loadActiveSong();
+  });
+  
+  // Song playback button (Listen)
+  document.getElementById('btn-song-play').addEventListener('click', () => {
+    initAudio();
+    toggleSongPlayback();
+  });
+  
+  // Song reset button
+  document.getElementById('btn-song-reset').addEventListener('click', () => {
+    initAudio();
+    resetSong();
+  });
+  
+  // Tempo BPM slider input
+  const tempoSlider = document.getElementById('input-tempo');
+  const tempoLabel = document.getElementById('lbl-tempo');
+  if (tempoSlider && tempoLabel) {
+    tempoSlider.addEventListener('input', (e) => {
+      playbackTempoBpm = parseInt(e.target.value);
+      tempoLabel.textContent = playbackTempoBpm;
+      
+      // If currently playing, restart interval with new tempo
+      if (isPlayingSong) {
+        stopSongPlayback();
+        toggleSongPlayback();
+      }
+    });
+  }
+  
+  // Custom Song Load Button
+  document.getElementById('btn-load-custom').addEventListener('click', () => {
+    initAudio();
+    const customAbc = document.getElementById('txt-custom-abc').value.trim();
+    if (customAbc) {
+      loadCustomSong(customAbc);
+    } else {
+      alert("Please paste some notes first!");
+    }
+  });
+
   // Reset stats button
   document.getElementById('btn-reset-stats').addEventListener('click', () => {
     initAudio();
@@ -788,6 +1211,7 @@ function initEventListeners() {
   // Dismiss feedback overlay on click to skip transition wait time
   document.getElementById('feedback-overlay').addEventListener('click', () => {
     if (currentGameState.isTransitioning) {
+      if (currentMode === 'song') return; // Handled locally in showSongCompletionMessage
       // Clean transition lock early and load next question
       currentGameState.isTransitioning = false;
       nextQuestion();

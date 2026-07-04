@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Chromatic Harmonica Trainer - Learn Notes on Sheet Music</title>
   <meta name="description" content="An interactive web application to master chromatic harmonica notes. Practice reading sheet music with a visual harmonica, sound synthesis, and real-time feedback.">
-  <link rel="stylesheet" href="style.css?v=4">
+  <link rel="stylesheet" href="style.css?v=5">
   <!-- abcjs library for dynamic rendering of sheet music -->
   <script src="https://cdn.jsdelivr.net/npm/abcjs@6.6.3/dist/abcjs-basic-min.js"></script>
 </head>
@@ -117,10 +117,55 @@
       
       <!-- Sheet Music Card -->
       <div class="card sheet-card">
-        <h2>
-          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
-          Current Note
-        </h2>
+        <!-- Mode Switcher -->
+        <div class="mode-switcher-container">
+          <button id="btn-mode-quiz" class="btn-mode active">Quiz Mode</button>
+          <button id="btn-mode-song" class="btn-mode">Learn a Song</button>
+        </div>
+
+        <!-- Song Control Panel (Hidden in Quiz Mode) -->
+        <div id="song-control-panel" class="song-control-panel hidden">
+          <div class="song-select-row">
+            <select id="select-song" class="select-custom" style="width: 100%;">
+              <option value="twinkle" selected>Twinkle Twinkle Little Star (Holes 1-3)</option>
+              <option value="ode">Ode to Joy (Holes 1-3)</option>
+              <option value="birthday">Happy Birthday (Holes 1-4)</option>
+              <option value="grace">Amazing Grace (Holes 1-4)</option>
+              <option value="custom">-- Custom Song (Paste ABC) --</option>
+            </select>
+          </div>
+          
+          <div class="song-playback-row">
+            <button id="btn-song-play" class="btn-playback-toggle">
+              <svg id="svg-play" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              <span id="txt-play">Listen</span>
+            </button>
+            
+            <button id="btn-song-reset" class="btn-playback-toggle reset">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
+              Reset
+            </button>
+            
+            <div class="tempo-container">
+              <span class="tempo-label"><span id="lbl-tempo">100</span> BPM</span>
+              <input type="range" id="input-tempo" min="60" max="180" value="100" class="tempo-slider">
+            </div>
+          </div>
+          
+          <!-- Custom Song Loader Textarea -->
+          <div id="custom-song-loader" class="custom-song-loader hidden">
+            <textarea id="txt-custom-abc" placeholder="Paste your ABC notation here... (e.g. C D E C)"></textarea>
+            <button id="btn-load-custom" class="btn-primary" style="margin-top: 0.5rem; width: 100%; justify-content: center; padding: 0.4rem 1rem; font-size: 0.85rem;">Load Custom Song</button>
+          </div>
+          
+          <!-- Song Progress Indicator -->
+          <div class="song-progress-container">
+            <span id="lbl-song-progress">Note 0 of 0</span>
+            <div class="progress-bar-bg">
+              <div id="progress-bar-fill" class="progress-bar-fill" style="width: 0%;"></div>
+            </div>
+          </div>
+        </div>
         
         <div class="music-paper-container" id="sheet-container">
           <!-- abcjs renders here -->
@@ -257,6 +302,6 @@
   </main>
 
   <!-- Main app script -->
-  <script src="app.js?v=4"></script>
+  <script src="app.js?v=5"></script>
 </body>
 </html>
