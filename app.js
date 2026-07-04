@@ -62,6 +62,22 @@ const SONG_DATABASE = {
   grace: {
     name: "Amazing Grace",
     abc: "X:1\nL:1/4\nK:C\nC | F2 A/2F/2 A2 | G2 F | D2 C2 | C |\nF2 A/2F/2 A2 | G2 A | c3 | A |\nc2 A/2F/2 A2 | G2 F | D2 C2 | C |\nF2 A/2F/2 F2 | G2 F |"
+  },
+  scarborough: {
+    name: "Scarborough Fair",
+    abc: "X:1\nL:1/4\nK:C\nD2 D | A2 A | E3/2F/2 D | A3 |\nB2 c | d2 c | A2 B | G3 |\nd2 d | d2 c | A2 G | F/2E/2 D2 |\nD2 A | G2 F | E2 D | C3 | D3 |"
+  },
+  greensleeves: {
+    name: "Greensleeves",
+    abc: "X:1\nL:1/8\nK:C\nA | c2 d e3/2f/2 e | d2 B G3/2A/2 B | c2 A A3/2^G/2 A | B2 ^G E2 A |\nc2 d e3/2f/2 e | d2 B G3/2A/2 B | c3/2B/2 A ^G3/2F/2 ^G | A3 A2 z |\ng3 g3/2f/2 e | d2 B G3/2A/2 B | c2 A A3/2^G/2 A | B2 ^G E3 |\ng3 g3/2f/2 e | d2 B G3/2A/2 B | c3/2B/2 A ^G3/2F/2 ^G | A3 A2 |"
+  },
+  cabesa: {
+    name: "Por una Cabeza",
+    abc: "X:1\nL:1/8\nK:C\ne/2e/2e/2e/2 e2 | d/2d/2d/2d/2 d2 | c/2c/2c/2c/2 c B/2c/2 | d B G2 |\nf/2f/2f/2f/2 f2 | e/2e/2e/2e/2 e2 | d/2d/2d/2d/2 d c/2d/2 | e c A2 |\ne/2e/2e/2e/2 e2 | d/2d/2d/2d/2 d2 | c/2c/2c/2c/2 c B/2c/2 | d B G2 |\nd/2d/2d/2d/2 d2 | c/2c/2c/2c/2 c2 | B/2B/2B/2B/2 B A/2B/2 | c2 z2 |"
+  },
+  menuet: {
+    name: "Menuet in G (Bach)",
+    abc: "X:1\nL:1/4\nK:C\nG c/2d/2 e/2f/2 | g c c | a f/2g/2 a/2b/2 | c' c c |\nf g/2f/2 e/2d/2 | e f/2e/2 d/2c/2 | d B c | d3 |\nG c/2d/2 e/2f/2 | g c c | a f/2g/2 a/2b/2 | c' c c |\nf g/2f/2 e/2d/2 | e f/2e/2 d/2c/2 | d e/2d/2 B | c3 |"
   }
 };
 
