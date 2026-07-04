@@ -49,19 +49,19 @@ let playbackTempoBpm = 100;
 const SONG_DATABASE = {
   twinkle: {
     name: "Twinkle Twinkle Little Star",
-    abc: "X:1\nL:1/4\nK:C\nC C G G | A A G2 | F F E E | D D C2 | G G F F | E E D2 | G G F F | E E D2 | C C G G | A A G2 | F F E E | D D C2"
+    abc: "X:1\nL:1/4\nK:C\nC C G G | A A G2 | F F E E | D D C2 |\nG G F F | E E D2 | G G F F | E E D2 |\nC C G G | A A G2 | F F E E | D D C2 |"
   },
   ode: {
     name: "Ode to Joy",
-    abc: "X:1\nL:1/4\nK:C\nE E F G | G F E D | C C D E | E3/2D/2 D2 | E E F G | G F E D | C C D E | D3/2C/2 C2 | D D E C | D E/2F/2 E C | D E/2F/2 E D | C D G2 | E E F G | G F E D | C C D E | D3/2C/2 C2"
+    abc: "X:1\nL:1/4\nK:C\nE E F G | G F E D | C C D E | E3/2D/2 D2 |\nE E F G | G F E D | C C D E | D3/2C/2 C2 |\nD D E C | D E/2F/2 E C | D E/2F/2 E D | C D G2 |\nE E F G | G F E D | C C D E | D3/2C/2 C2 |"
   },
   birthday: {
     name: "Happy Birthday",
-    abc: "X:1\nL:1/4\nK:C\nC3/2C/2 D C F | E2 z | C3/2C/2 D C G | F2 z | C3/2C/2 c A F E | D2 B3/2B/2 A F G | F2"
+    abc: "X:1\nL:1/4\nK:C\nC3/2C/2 D C F | E2 z | C3/2C/2 D C G | F2 z |\nC3/2C/2 c A F E | D2 B3/2B/2 A F G | F2 |"
   },
   grace: {
     name: "Amazing Grace",
-    abc: "X:1\nL:1/4\nK:C\nC | F2 A/2F/2 A2 | G2 F | D2 C2 | C | F2 A/2F/2 A2 | G2 A | c3 | A | c2 A/2F/2 A2 | G2 F | D2 C2 | C | F2 A/2F/2 F2 | G2 F"
+    abc: "X:1\nL:1/4\nK:C\nC | F2 A/2F/2 A2 | G2 F | D2 C2 | C |\nF2 A/2F/2 A2 | G2 A | c3 | A |\nc2 A/2F/2 A2 | G2 F | D2 C2 | C |\nF2 A/2F/2 F2 | G2 F |"
   }
 };
 
@@ -569,9 +569,9 @@ function loadSongString(abcString, songName) {
   try {
     // Render the song using ABCJS
     const visualObjs = ABCJS.renderAbc("sheet-container", abcString, {
-      scale: window.innerWidth <= 768 ? 1.05 : 1.4,
+      scale: window.innerWidth <= 768 ? 1.05 : 1.3,
       add_classes: true,
-      staffwidth: window.innerWidth <= 768 ? 220 : 260
+      responsive: "resize"
     });
     
     // Extract the note MIDI sequence
@@ -783,7 +783,6 @@ function resetSong() {
 function toggleSongPlayback() {
   if (songNotes.length === 0) return;
   
-  const playBtn = document.getElementById('btn-song-play');
   const playIcon = document.getElementById('svg-play');
   const playText = document.getElementById('txt-play');
   
@@ -801,20 +800,37 @@ function toggleSongPlayback() {
       currentSongNoteIndex = 0;
     }
     
-    // Interval calculations based on BPM
-    // One quarter note beat in ms is: 60000 / BPM
-    const intervalMs = (60000 / playbackTempoBpm);
+    // Begin playback loop
+    playNextSongNote();
+  }
+}
+
+/**
+ * Sequences playing the next note in the song using dynamically computed note durations.
+ */
+function playNextSongNote() {
+  if (!isPlayingSong) return;
+  
+  if (currentSongNoteIndex < songNotes.length) {
+    highlightActiveSongNote();
     
-    playbackInterval = setInterval(() => {
-      if (currentSongNoteIndex < songNotes.length) {
-        highlightActiveSongNote();
-        playNoteSound(songNotes[currentSongNoteIndex].midi, intervalMs / 1000 * 0.9);
-        currentSongNoteIndex++;
-        updateSongProgressUI();
-      } else {
-        stopSongPlayback();
-      }
-    }, intervalMs);
+    const note = songNotes[currentSongNoteIndex];
+    // Calculate note duration in ms: (60000 / BPM) * durationInBeats
+    // In abcjs, event.duration is a fraction of a whole note (e.g. 0.25 = quarter note)
+    const beatDurationMs = 60000 / playbackTempoBpm;
+    const noteBeats = note.duration * 4;
+    const noteDurationMs = noteBeats * beatDurationMs;
+    
+    // Play sound, slightly shortened to leave a minor gap before the next note starts (articulation)
+    playNoteSound(note.midi, noteDurationMs / 1000 * 0.95);
+    
+    currentSongNoteIndex++;
+    updateSongProgressUI();
+    
+    // Schedule the next note
+    playbackInterval = setTimeout(playNextSongNote, noteDurationMs);
+  } else {
+    stopSongPlayback();
   }
 }
 
@@ -823,7 +839,7 @@ function toggleSongPlayback() {
  */
 function stopSongPlayback() {
   if (playbackInterval) {
-    clearInterval(playbackInterval);
+    clearTimeout(playbackInterval);
     playbackInterval = null;
   }
   isPlayingSong = false;
