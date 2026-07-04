@@ -235,12 +235,32 @@ h2 {
   transition: var(--transition-smooth);
   text-align: center;
   display: block;
+  overflow-x: auto;
+  overflow-y: hidden;
+  white-space: nowrap;
+}
+
+/* Premium scrollbar styling for sheet music */
+.music-paper-container::-webkit-scrollbar {
+  height: 6px;
+}
+.music-paper-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.02);
+  border-radius: 3px;
+}
+.music-paper-container::-webkit-scrollbar-thumb {
+  background: rgba(15, 23, 42, 0.1);
+  border-radius: 3px;
+  transition: background 0.2s;
+}
+.music-paper-container::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
 }
 
 /* Styled ABCJS rendered outputs */
 .music-paper-container svg {
-  display: block;
-  max-width: 100%;
+  display: inline-block;
+  max-width: none !important;
   height: auto;
   margin: 0 auto;
 }

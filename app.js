@@ -621,8 +621,22 @@ function extractNotesFromVisualObj(visualObjs) {
         voice.forEach(event => {
           // Look for notes, filter out rests (rests don't have event.pitches)
           if (event.el_type === "note" && event.pitches && event.pitches.length > 0) {
+            const pitchObj = event.pitches[0];
+            const step = pitchObj.pitch;
+            
+            // Map the step (0 represents C4, 7 represents C5, 14 represents C6) to standard MIDI
+            const baseMidi = 60 + Math.floor(step / 7) * 12 + [0, 2, 4, 5, 7, 9, 11][((step % 7) + 7) % 7];
+            let midi = baseMidi;
+            
+            // Adjust for accidentals
+            if (pitchObj.accidental === 'sharp') {
+              midi += 1;
+            } else if (pitchObj.accidental === 'flat') {
+              midi -= 1;
+            }
+            
             notes.push({
-              midi: event.pitches[0].pitch,
+              midi: midi,
               duration: event.duration
             });
           }
