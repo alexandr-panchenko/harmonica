@@ -1,0 +1,13 @@
+node_modules/
+dist/
+.bun-cache/
+.bun-tmp/
+test-results/
+playwright-report/
+HARMONICA_TRAINER_AGENT_PROMPT.md
+HARMONICA_TRAINER_AUTONOMOUS_HANDOFF.md
+HARMONICA_TRAINER_REAL_AUDIO_FIXTURES.md
+scratch/
+*.webm
+*.wav
+*.zip

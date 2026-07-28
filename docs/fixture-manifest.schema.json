@@ -1,0 +1,12 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Harmonica fixture manifest",
+  "type": "object",
+  "required": ["schemaVersion", "instrument", "capture", "clips"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "instrument": { "type": "object", "required": ["profileId", "key", "holes"], "properties": { "profileId": { "type": "string" }, "manufacturer": { "type": "string" }, "model": { "type": "string" }, "key": { "type": "string" }, "holes": { "type": "integer" }, "valveConfiguration": { "enum": ["valved", "valveless", "mixed", "unknown"] } } },
+    "capture": { "type": "object" },
+    "clips": { "type": "array", "items": { "type": "object", "required": ["file", "expectedMidi", "take"], "properties": { "file": { "type": "string" }, "expectedMidi": { "type": "integer" }, "dynamic": { "enum": ["soft", "medium", "loud"] }, "take": { "type": "integer" }, "notes": { "type": "string" } } } }
+  }
+}

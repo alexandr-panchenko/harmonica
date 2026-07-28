@@ -1,0 +1,138 @@
+{
+  "generatedAt": "2026-07-28T21:08:48.261Z",
+  "sampleRate": 48000,
+  "rows": [
+    {
+      "fixture": "clean-low",
+      "algorithm": "mpm-pitchy",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 0.0004701655328176457,
+      "p95Cents": 0.321976695127546,
+      "stableFrames": 172,
+      "processingMsPerFrame": 0.5646241046511629
+    },
+    {
+      "fixture": "clean-low",
+      "algorithm": "yin",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 0.2990171815547171,
+      "p95Cents": 0.2990171815547171,
+      "stableFrames": 172,
+      "processingMsPerFrame": 5.557888645348837
+    },
+    {
+      "fixture": "clean-low",
+      "algorithm": "autocorrelation",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 0.2990171815547171,
+      "p95Cents": 5.0098610381155595,
+      "stableFrames": 172,
+      "processingMsPerFrame": 2.4468653779069776
+    },
+    {
+      "fixture": "strong-second",
+      "algorithm": "mpm-pitchy",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 0.0019349337918583842,
+      "p95Cents": 0.025419084651900903,
+      "stableFrames": 172,
+      "processingMsPerFrame": 0.41266963372092985
+    },
+    {
+      "fixture": "strong-second",
+      "algorithm": "yin",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 4.424680289449157,
+      "p95Cents": 4.424680289449157,
+      "stableFrames": 172,
+      "processingMsPerFrame": 4.9139366337209305
+    },
+    {
+      "fixture": "strong-second",
+      "algorithm": "autocorrelation",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 0.05813953488372093,
+      "medianAbsoluteCents": 1200.2990171815547,
+      "p95Cents": 1200.2990171815547,
+      "stableFrames": 172,
+      "processingMsPerFrame": 2.3822570523255804
+    },
+    {
+      "fixture": "vibrato-mid",
+      "algorithm": "mpm-pitchy",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 5.804107312542328,
+      "p95Cents": 8.26446678433257,
+      "stableFrames": 172,
+      "processingMsPerFrame": 0.3463736279069783
+    },
+    {
+      "fixture": "vibrato-mid",
+      "algorithm": "yin",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 1.4432964979889107,
+      "p95Cents": 17.39948363413788,
+      "stableFrames": 172,
+      "processingMsPerFrame": 4.611995697674417
+    },
+    {
+      "fixture": "vibrato-mid",
+      "algorithm": "autocorrelation",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 0.8662790697674418,
+      "medianAbsoluteCents": 1.4432964979889107,
+      "p95Cents": 1206.4799852911078,
+      "stableFrames": 172,
+      "processingMsPerFrame": 2.1260040174418617
+    },
+    {
+      "fixture": "noisy-high",
+      "algorithm": "mpm-pitchy",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 0.028583748998300962,
+      "p95Cents": 0.07530902115888694,
+      "stableFrames": 172,
+      "processingMsPerFrame": 0.3590184418604611
+    },
+    {
+      "fixture": "noisy-high",
+      "algorithm": "yin",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 1,
+      "medianAbsoluteCents": 5.0098610381155595,
+      "p95Cents": 5.0098610381155595,
+      "stableFrames": 172,
+      "processingMsPerFrame": 4.776207482558136
+    },
+    {
+      "fixture": "noisy-high",
+      "algorithm": "autocorrelation",
+      "frame": 4096,
+      "hop": 256,
+      "identityAccuracy": 0.22674418604651161,
+      "medianAbsoluteCents": 3600.2990171815545,
+      "p95Cents": 3600.2990171815545,
+      "stableFrames": 172,
+      "processingMsPerFrame": 2.024542058139538
+    }
+  ]
+}
