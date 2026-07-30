@@ -1,4 +1,4 @@
-export interface WrittenPitch { step: string; accidental?: "sharp" | "flat" | "natural"; octave: number }
+export interface WrittenPitch { step: "C" | "D" | "E" | "F" | "G" | "A" | "B"; accidental?: "sharp" | "flat" | "natural"; octave: number }
 export interface MelodyEvent {
   id: string;
   kind: "note" | "rest";
@@ -59,14 +59,19 @@ export function parseAbc(raw: string, id = "custom"): Melody {
     const isRest = match[0].startsWith("z");
     const value = isRest ? match[5] : match[4];
     const eventDuration = duration(value);
-    let midi: number | undefined;
+    let midi: number | undefined, writtenPitch: WrittenPitch | undefined;
     if (!isRest) {
       const letter = match[2] ?? "C";
       midi = BASE[letter.toUpperCase()]! + (letter === letter.toLowerCase() ? 12 : 0);
       for (const mark of match[3] ?? "") midi += mark === "'" ? 12 : -12;
       midi += match[1] === "^" ? 1 : match[1] === "_" ? -1 : 0;
+      writtenPitch = {
+        step: letter.toUpperCase() as WrittenPitch["step"],
+        octave: Math.floor((midi - (match[1] === "^" ? 1 : match[1] === "_" ? -1 : 0)) / 12) - 1,
+        accidental: match[1] === "^" ? "sharp" : match[1] === "_" ? "flat" : match[1] === "=" ? "natural" : undefined,
+      };
     }
-    events.push({ id: `e${events.length}`, kind: isRest ? "rest" : "note", startBeat: beat, durationBeats: eventDuration, midi, measureIndex, sourceRange: { start: match.index, end: token.lastIndex } });
+    events.push({ id: `e${events.length}`, kind: isRest ? "rest" : "note", startBeat: beat, durationBeats: eventDuration, midi, writtenPitch, measureIndex, sourceRange: { start: match.index, end: token.lastIndex } });
     beat += eventDuration;
   }
   if (!events.some((event) => event.kind === "note")) throw new Error("No notes found in ABC input.");

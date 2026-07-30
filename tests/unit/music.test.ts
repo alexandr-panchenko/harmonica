@@ -10,6 +10,6 @@ describe("pitch math", () => {
 
 describe("ABC adapter", () => {
   test("preserves legacy examples", () => { for (const [id,song] of Object.entries(SONGS)) expect(parseAbc(song.abc,id).events.some((event)=>event.kind==="note")).toBeTrue(); });
-  test("parses rests, accidentals, octaves, and durations", () => { const melody=parseAbc("X:1\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\n^C2 z/2 d'3/2 |"); expect(melody.tempoQpm).toBe(120); expect(melody.events.map((event)=>[event.kind,event.midi,event.durationBeats])).toEqual([["note",61,1],["rest",undefined,.25],["note",86,.75]]); });
+  test("parses rests, accidentals, octaves, durations, and written spelling", () => { const melody=parseAbc("X:1\nM:4/4\nL:1/8\nQ:1/4=120\nK:C\n^C2 _D z/2 d'3/2 |"); expect(melody.tempoQpm).toBe(120); expect(melody.events.map((event)=>[event.kind,event.midi,event.durationBeats])).toEqual([["note",61,1],["note",61,.5],["rest",undefined,.25],["note",86,.75]]); expect(melody.events[0]!.writtenPitch).toEqual({step:"C",octave:4,accidental:"sharp"}); expect(melody.events[1]!.writtenPitch).toEqual({step:"D",octave:4,accidental:"flat"}); });
   test("rejects polyphony", () => expect(()=>parseAbc("X:1\nV:one\nK:C\nC")).toThrow("Polyphonic"));
 });

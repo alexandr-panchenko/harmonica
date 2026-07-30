@@ -1,11 +1,10 @@
-# Browser and mobile test report
+# Browser and mobile test report — polish sprint
 
-Automated on 2026-07-28 with Playwright Chromium 140 fallback build.
+Automated on 2026-07-30 with the repository-pinned Playwright Chromium.
 
-- Desktop Chromium: Mode A held note, score step, relative-ear anchor, navigation, and pitch lab passed.
-- Pixel 7 emulation: the same hero paths passed; portrait layout remained readable.
-- Multi-pointer simulation: Slide pointer and hole pointer were held concurrently; pointer release/cancellation completed without accidental navigation.
-- Visual inspection: desktop pitch lab and mobile game-stage screenshots are in `docs/screenshots/`. Staff, target ribbon, playhead, trace, controls, and non-color labels were visible. No horizontal page overflow appeared; the harmonica itself intentionally scrolls horizontally.
+- Desktop Chromium: hidden answer, all 48 direct actions, blow/out and draw/in one-press paths, held duration, five-target Find history, beat-aware score step/flow, relative-ear anchor, navigation, and labs are covered.
+- Pixel 7 portrait and landscape emulation run the same paths. Portrait uses two stacked six-hole banks; every cell is at least 44 CSS px high.
+- Visual inspection artifacts in `docs/screenshots/` show the deterministic clef, middle-C ledger line, answer-hidden stage, five-note history, score step, two flow positions, and all responsive grid variants.
 - Reduced motion is covered by CSS media query, not a separate screenshot.
 
-Not automatable here: physical microphone permission UX on Safari/iOS, real-note latency, background/return behavior, natural bend trace, and actual touch scroll suppression on hardware. See `manual-test-checklist.md`.
+Not automatable here: physical microphone permission UX on Safari/iOS, real-room noise, real-note latency, background/return behavior, natural bend trace, sample-timbre judgment, and actual touch scroll suppression on hardware. See `manual-test-checklist.md`.
