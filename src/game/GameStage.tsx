@@ -37,9 +37,9 @@ export function GameStage({ events, activeIndex, hidden, currentBeat, trace = []
     <div className="staff-viewport">
       <svg className="staff" viewBox={`0 0 ${WIDTH} 260`} preserveAspectRatio="xMidYMid meet" role="img" aria-label="Interactive treble staff">
         <defs><filter id="glow"><feGaussianBlur stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter><linearGradient id="ribbon" x1="0" x2="1"><stop stopColor="#54e7d4"/><stop offset="1" stopColor="#805dff"/></linearGradient></defs>
-        <rect width={WIDTH} height="260" rx="22" fill="#081722" />
+        <rect width={WIDTH} height="260" rx="28" className="staff-field" />
         {[94,110,126,142,158].map((y) => <line key={y} x1="42" x2={WIDTH - 24} y1={y} y2={y} className="staff-line" />)}
-        <TrebleClef x={54} y={99} className="clef-path" />
+        <TrebleClef x={58} y={147} className="clef-path" />
         {events.map((event, index) => {
           const x = eventX(event, beat, pixelsPerBeat), active = index === activeIndex;
           if (x < 90 || x > WIDTH + 80) return null;

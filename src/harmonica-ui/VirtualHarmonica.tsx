@@ -3,11 +3,13 @@ import { STANDARD_C12, type Breath, type HarmonicaAction, type Slide } from "../
 import { noteName } from "../music/pitch";
 
 interface Props { onStart: (action: HarmonicaAction) => void; onEnd: (action: HarmonicaAction, durationMs: number) => void; showLabels?: boolean }
-const ROWS: { breath: Breath; slide: Slide; label: string; short: string }[] = [
-  { breath: "blow", slide: "out", label: "Blow, slide out", short: "↑ OUT" },
-  { breath: "blow", slide: "in", label: "Blow, slide in", short: "↑ IN" },
-  { breath: "draw", slide: "out", label: "Draw, slide out", short: "↓ OUT" },
-  { breath: "draw", slide: "in", label: "Draw, slide in", short: "↓ IN" },
+const BREATHS: { breath: Breath; symbol: string; label: string }[] = [
+  { breath: "blow", symbol: "↑", label: "BLOW" },
+  { breath: "draw", symbol: "↓", label: "DRAW" },
+];
+const SLIDES: { slide: Slide; symbol: string; label: string }[] = [
+  { slide: "out", symbol: "○", label: "OUT" },
+  { slide: "in", symbol: "●", label: "IN" },
 ];
 
 export function VirtualHarmonica({ onStart, onEnd, showLabels = false }: Props) {
@@ -22,31 +24,38 @@ export function VirtualHarmonica({ onStart, onEnd, showLabels = false }: Props) 
     const at = started.current.get(key); if (at === undefined) return;
     started.current.delete(key); setSounding(action.id, false); onEnd(action, performance.now() - at);
   };
-  const bank = (holes: number[]) => <div className="action-bank">
-    <span className="grid-corner" aria-hidden="true">ACTION</span>{holes.map((hole) => <span className="hole-number" key={hole}>#{hole}</span>)}
-    {ROWS.flatMap((row) => [<span className="action-row-label" key={`${row.label}-label`} title={row.label}>{row.short}</span>, ...holes.map((hole) => {
-      const action = STANDARD_C12.physicalActions.find((item) => item.hole === hole && item.breath === row.breath && item.slide === row.slide)!;
+  const actionButton = (hole: number, breath: Breath, slide: Slide) => {
+      const action = STANDARD_C12.physicalActions.find((item) => item.hole === hole && item.breath === breath && item.slide === slide)!;
       const keyboardKey = `keyboard-${action.id}`;
       return <button
         key={action.id}
         data-action-id={action.id}
         data-hole={hole}
-        data-breath={row.breath}
-        data-slide={row.slide}
+        data-breath={breath}
+        data-slide={slide}
         className={`action-cell ${pressed.has(action.id) ? "sounding" : ""}`}
-        aria-label={`Hole ${hole}, ${row.breath}, slide ${row.slide}`}
+        aria-label={`Hole ${hole}, ${breath}, slide ${slide}`}
         aria-pressed={pressed.has(action.id)}
         onPointerDown={(event) => { event.preventDefault(); event.currentTarget.setPointerCapture(event.pointerId); start(action, `pointer-${event.pointerId}`); }}
         onPointerUp={(event) => end(action, `pointer-${event.pointerId}`)}
         onPointerCancel={(event) => end(action, `pointer-${event.pointerId}`)}
         onKeyDown={(event) => { if ((event.key === " " || event.key === "Enter") && !event.repeat) { event.preventDefault(); start(action, keyboardKey); } }}
         onKeyUp={(event) => { if (event.key === " " || event.key === "Enter") { event.preventDefault(); end(action, keyboardKey); } }}
-      ><span aria-hidden="true">{row.breath === "blow" ? "↑" : "↓"}<i>{row.slide === "in" ? "●" : "○"}</i></span>{showLabels && <small>{noteName(action.canonicalMidi)}</small>}</button>;
-    })])}
-  </div>;
+      ><span className="slide-symbol" aria-hidden="true">{slide === "in" ? "●" : "○"}</span><span className="slide-name">{slide === "in" ? "IN" : "OUT"}</span>{showLabels && <small>{noteName(action.canonicalMidi)}</small>}</button>;
+  };
+  const holes = Array.from({length: 12}, (_, index) => index + 1);
   return <div className="virtual-panel" data-testid="virtual-harmonica">
-    <div className="action-grid-heading"><div><span className="eyebrow">ONE-ACTION LAYOUT</span><b>Breath × slide × hole</b></div><span>○ slide out · ● slide in</span></div>
-    <div className="action-banks">{bank([1,2,3,4,5,6])}{bank([7,8,9,10,11,12])}</div>
-    <p className="instrument-hint">Press and hold one cell to sound and time the complete physical action.</p>
+    <div className="instrument-title"><span><b>CHROMATIC 12</b><small>Hold any action to play</small></span><div className="slide-key"><span>○ OUT</span><span>● IN</span></div></div>
+    <div className="harmonica-scroll">
+      <div className="harmonica-body">
+        <div className="harmonica-brand" aria-hidden="true"><b>H</b><span>BREATH</span></div>
+        <div className="hole-strip">{holes.map((hole) => <span className="hole-number" key={hole}>{hole}</span>)}</div>
+        {BREATHS.map((row) => <div className={`breath-row ${row.breath}`} key={row.breath}>
+          <span className="breath-label"><i>{row.symbol}</i><b>{row.label}</b></span>
+          {holes.map((hole) => <div className="hole-actions" key={hole}>{SLIDES.map(({slide}) => actionButton(hole, row.breath, slide))}</div>)}
+        </div>)}
+        <div className="instrument-rail" aria-hidden="true"><span>STANDARD C</span><i/><span>12 HOLE CHROMATIC</span></div>
+      </div>
+    </div>
   </div>;
 }
