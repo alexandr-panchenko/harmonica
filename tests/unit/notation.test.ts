@@ -21,4 +21,8 @@ describe("treble staff notation", () => {
     expect(layoutWrittenPitch(writtenPitchFromMidi(60)).ledgerLines).toEqual([174]);
     expect(layoutWrittenPitch(writtenPitchFromMidi(97)).ledgerLines.length).toBeGreaterThan(3);
   });
+  test("can spell chromatic pitches with flats for varied reading practice", () => {
+    expect(writtenPitchFromMidi(61,true)).toEqual({step:"D",octave:4,accidental:"flat"});
+    expect(writtenPitchFromMidi(61)).toEqual({step:"C",octave:4,accidental:"sharp"});
+  });
 });

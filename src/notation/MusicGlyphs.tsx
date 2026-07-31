@@ -5,8 +5,26 @@ export function TrebleClef({ x, y, className = "music-glyph" }: GlyphProps) {
   return <path className={className} transform={`translate(${x} ${y}) scale(2.45)`} aria-hidden="true" d="M 9.69 -37.41 c .09 -.09 .24 -.06 .36 0 c .12 .09 .57 .6 .96 1.11 c 1.77 2.34 3.21 5.85 3.57 8.73 c .21 1.56 .03 3.27 -.45 4.86 c -.69 2.31 -1.92 4.47 -4.23 7.44 c -.3 .39 -.57 .72 -.6 .75 c -.03 .06 0 .15 .18 .78 c .54 1.68 1.38 4.44 1.68 5.49 l .09 .42 l .39 0 c 1.47 .09 2.76 .51 3.96 1.29 c 1.83 1.23 3.06 3.21 3.39 5.52 c .09 .45 .12 1.29 .06 1.74 c -.09 1.02 -.33 1.83 -.75 2.73 c -.84 1.71 -2.28 3.06 -4.02 3.72 l -.33 .12 l .03 1.26 c 0 1.74 -.06 3.63 -.21 4.62 c -.45 3.06 -2.19 5.49 -4.47 6.21 c -.57 .18 -.9 .21 -1.59 .21 c -.69 0 -1.02 -.03 -1.65 -.21 c -1.14 -.27 -2.13 -.84 -2.94 -1.65 c -.99 -.99 -1.56 -2.16 -1.71 -3.54 c -.09 -.81 .06 -1.53 .45 -2.13 c .63 -.99 1.83 -1.56 3 -1.53 c 1.5 .09 2.64 1.32 2.73 2.94 c .06 1.47 -.93 2.7 -2.37 2.97 c -.45 .06 -.84 .03 -1.29 -.09 l -.21 -.09 l .09 .12 c .39 .54 .78 .93 1.32 1.26 c 1.35 .87 3.06 1.02 4.35 .36 c 1.44 -.72 2.52 -2.28 2.97 -4.35 c .15 -.66 .24 -1.5 .3 -3.03 c .03 -.84 .03 -2.94 0 -3 c -.03 0 -.18 0 -.36 .03 c -.66 .12 -.99 .12 -1.83 .12 c -1.05 0 -1.71 -.06 -2.61 -.3 c -4.02 -.99 -7.11 -4.35 -7.8 -8.46 c -.12 -.66 -.12 -.99 -.12 -1.83 c 0 -.84 0 -1.14 .15 -1.92 c .36 -2.28 1.41 -4.62 3.3 -7.29 l 2.79 -3.6 c .54 -.66 .96 -1.2 .96 -1.23 c 0 -.03 -.09 -.33 -.18 -.69 c -.96 -3.21 -1.41 -5.28 -1.59 -7.68 c -.12 -1.38 -.15 -3.09 -.06 -3.96 c .33 -2.67 1.38 -5.07 3.12 -7.08 c .36 -.42 .99 -1.05 1.17 -1.14 z m 2.01 4.71 c -.15 -.3 -.3 -.54 -.3 -.54 c -.03 0 -.18 .09 -.3 .21 c -2.4 1.74 -3.87 4.2 -4.26 7.11 c -.06 .54 -.06 1.41 -.03 1.89 c .09 1.29 .48 3.12 1.08 5.22 c .15 .42 .24 .78 .24 .81 c 0 .03 .84 -1.11 1.23 -1.68 c 1.89 -2.73 2.88 -5.07 3.15 -7.53 c .09 -.57 .12 -1.74 .06 -2.37 c -.09 -1.23 -.27 -1.92 -.87 -3.12 z m -2.94 20.7 c -.21 -.72 -.39 -1.32 -.42 -1.32 c 0 0 -1.2 1.47 -1.86 2.37 c -2.79 3.63 -4.02 6.3 -4.35 9.3 c -.03 .21 -.03 .69 -.03 1.08 c 0 .69 0 .75 .06 1.11 c .12 .54 .27 .99 .51 1.47 c .69 1.38 1.83 2.55 3.42 3.42 c .96 .54 2.07 .9 3.21 1.08 c .78 .12 2.04 .12 2.94 -.03 c .51 -.06 .45 -.03 .42 -.3 c -.24 -3.33 -.72 -6.33 -1.62 -10.08 c -.09 -.39 -.18 -.75 -.18 -.78 c -.03 -.03 -.42 0 -.81 .09 c -.9 .18 -1.65 .57 -2.22 1.14 c -.72 .72 -1.08 1.65 -1.05 2.64 c .06 .96 .48 1.83 1.23 2.58 c .36 .36 .72 .63 1.17 .9 c .33 .18 .36 .21 .42 .33 c .18 .42 -.18 .9 -.6 .87 c -.18 -.03 -.84 -.36 -1.26 -.63 c -.78 -.51 -1.38 -1.11 -1.86 -1.83 c -1.77 -2.7 -.99 -6.42 1.71 -8.19 c .3 -.21 .81 -.48 1.17 -.63 c .3 -.09 1.02 -.3 1.14 -.3 c .06 0 .09 0 .09 -.03 c .03 -.03 -.51 -1.92 -1.23 -4.26 z m 3.78 7.41 c -.18 -.03 -.36 -.06 -.39 -.06 c -.03 0 0 .21 .18 1.02 c .75 3.18 1.26 6.3 1.5 9.09 c .06 .72 0 .69 .51 .42 c .78 -.36 1.44 -.96 1.98 -1.77 c 1.08 -1.62 1.2 -3.69 .3 -5.55 c -.81 -1.62 -2.31 -2.79 -4.08 -3.15 z"/>;
 }
 
-export function RestGlyph({ x, y, className = "music-glyph" }: GlyphProps) {
-  return <path className={className} aria-hidden="true" d={`M${x-5} ${y-25}l13 14-9 8 10 10-8 17-5-2 5-12-12-12 9-9-9-10z`} />;
+export function RestGlyph({ x, y, className = "music-glyph", durationBeats = 1 }: GlyphProps & { durationBeats?: number }) {
+  if (durationBeats >= 4) return <rect className={className} x={x - 10} y={y} width="20" height="7" aria-hidden="true" />;
+  if (durationBeats >= 2) return <rect className={className} x={x - 10} y={y - 7} width="20" height="7" aria-hidden="true" />;
+  const eighth = durationBeats <= .75;
+  if (eighth) return <g className={className} aria-hidden="true"><path d={`M${x-3} ${y-19}v32c0 8-8 12-13 7`} fill="none" stroke="currentColor" strokeWidth="4"/><path d={`M${x-3} ${y-19}q18 4 12 17q-1-8-12-9z`} /></g>;
+  return <path className={className} aria-hidden="true" d={`M${x-4} ${y-20}l10 9-7 7 8 8-8 15-4-2 5-11-10-10 7-8-7-7z`} />;
+}
+
+export function NoteGlyph({ x, y, durationBeats, className = "" }: GlyphProps & { durationBeats: number }) {
+  const dotted = [0.75, 1.5, 3, 6].some((value) => Math.abs(durationBeats - value) < .01);
+  const baseDuration = dotted ? durationBeats / 1.5 : durationBeats;
+  const whole = baseDuration >= 4;
+  const open = baseDuration >= 2;
+  const flagged = baseDuration <= .5;
+  return <g className={className} data-duration-notation={whole ? "whole" : open ? "half" : flagged ? "eighth" : "quarter"}>
+    <ellipse cx={x} cy={y} rx="11" ry="8" className={`note-head ${open || whole ? "open" : "filled"}`} />
+    {!whole && <line x1={x + 9} x2={x + 9} y1={y} y2={y - 42} className="note-stem" />}
+    {flagged && <path d={`M${x + 9} ${y - 42} q22 8 10 27 q3 -12 -10 -16`} className="note-flag" />}
+    {dotted && <circle cx={x + 19} cy={y - 1} r="3.2" className="note-dot" />}
+  </g>;
 }
 
 export function AccidentalGlyph({ x, y, accidental, className = "accidental" }: GlyphProps & { accidental?: "sharp" | "flat" | "natural" }) {

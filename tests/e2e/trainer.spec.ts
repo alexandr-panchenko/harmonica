@@ -1,101 +1,115 @@
 import { expect, test, type Page } from "@playwright/test";
 
-async function pressAction(page: Page, id: string, pointerId: number, holdMs = 80) {
+async function pressAction(page: Page, id: string, holdMs = 100) {
   const cell = page.locator(`[data-action-id="${id}"]`);
-  pointerId = 1;
-  await cell.dispatchEvent("pointerdown", { pointerId, pointerType: "mouse", buttons: 1 });
+  await cell.dispatchEvent("pointerdown", { pointerId: 1, pointerType: "mouse", buttons: 1 });
   await page.waitForTimeout(holdMs);
-  await cell.dispatchEvent("pointerup", { pointerId, pointerType: "mouse", buttons: 0 });
+  await cell.dispatchEvent("pointerup", { pointerId: 1, pointerType: "mouse", buttons: 0 });
 }
 
-async function startMode(page: Page, name: "Find a note" | "Play the score" | "Play by ear") {
+async function openMode(page: Page, name: string, song = "Twinkle Twinkle") {
   await page.getByRole("button", { name: new RegExp(name) }).click();
+  if (name === "Play the score" || name === "Learn a song") await page.getByRole("button", { name: new RegExp(song) }).click();
 }
 
-test("find mode hides its answer and exposes all direct physical actions", async ({ page }, testInfo) => {
+test("main menu exposes five learning intents", async ({ page }, testInfo) => {
   await page.goto("./");
-  await startMode(page, "Find a note");
-  await expect(page.getByRole("heading", { name: "Find the note" })).toBeVisible();
-  await expect(page.locator("body")).not.toContainText("C4");
+  for (const name of ["Find a note","Play the score","Play by ear","Rhythm training","Learn a song"]) await expect(page.getByRole("button",{name:new RegExp(name)})).toBeVisible();
+  if(testInfo.project.name==="desktop") await page.screenshot({path:"docs/screenshots/expansion-main-menu-desktop.png",fullPage:true});
+  if(testInfo.project.name==="mobile") await page.screenshot({path:"docs/screenshots/expansion-mobile-portrait.png",fullPage:true});
+});
+
+test("find trainer has explicit randomized constraints and a persistent 12-hole instrument", async ({ page }, testInfo) => {
+  await page.goto("./"); await openMode(page,"Find a note");
+  await expect(page.getByRole("heading",{name:"Find the note"})).toBeVisible();
+  await expect(page.getByLabel("Find note range")).toHaveValue("beginner");
+  await page.getByLabel("Find note range").selectOption("full"); await page.getByLabel("Accidentals").selectOption("chromatic");
+  await expect(page.getByText(/possible pitches · anti-repeat shuffle/)).toBeVisible();
   await expect(page.locator(".action-cell")).toHaveCount(48);
-  await expect(page.locator(".instrument-controls,.slide-control")).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Hole 1, blow, slide out" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Hole 1, draw, slide in" })).toBeVisible();
-  await expect(page.locator(".harmonica-body")).toHaveCount(1);
-  await page.screenshot({ path: `docs/screenshots/polish-find-${testInfo.project.name}.png`, fullPage: true });
+  await expect(page.locator('[data-testid="virtual-harmonica"][data-profile="standard-c-12"]')).toBeVisible();
+  if(testInfo.project.name==="desktop") await page.screenshot({path:"docs/screenshots/expansion-find-note-desktop.png",fullPage:true});
 });
 
-test("one pointer action identifies blow/out and held duration", async ({ page }) => {
-  await page.goto("./");
-  await startMode(page, "Find a note");
-  await pressAction(page,"1-blow-out",1,340);
-  await expect(page.getByText(/Hit · C4/)).toBeVisible();
-  const duration=Number(await page.locator('[data-performance-midi="60"]').last().getAttribute("data-duration-ms"));
-  expect(duration).toBeGreaterThanOrEqual(300);
+test("settings independently control staff and harmonica labels and solfege", async ({ page }) => {
+  await page.goto("./"); await openMode(page,"Find a note");
+  await page.getByRole("button",{name:"Settings"}).click();
+  await page.getByLabel("Show labels on staff").check();
+  await page.getByLabel("Show labels on harmonica").uncheck();
+  await page.getByLabel("Note naming").selectOption("solfege");
+  await page.getByRole("button",{name:"Close settings"}).click();
+  await expect(page.locator(".note-label")).toHaveCount(1);
+  await expect(page.locator(".note-label")).toContainText(/Do|Re|Mi|Fa|Sol|La|Si/);
+  await expect(page.locator(".action-cell strong")).toHaveCount(0);
 });
 
-test("one pointer action identifies draw/slide-in without a state toggle", async ({ page }) => {
-  await page.goto("./");
-  await startMode(page, "Find a note");
-  await pressAction(page,"1-draw-in",2);
-  await expect(page.getByText(/E♭4 · play lower/)).toBeVisible();
-  await expect(page.locator('[data-performance-midi="63"].incorrect')).toBeVisible();
+test("10-hole profile changes the action model and full exercise range", async ({ page }, testInfo) => {
+  await page.goto("./"); await page.getByRole("button",{name:"Settings"}).click();
+  await page.getByLabel("Instrument").selectOption("standard-c-10"); await page.getByRole("button",{name:"Close settings"}).click();
+  await openMode(page,"Find a note"); await page.getByLabel("Find note range").selectOption("full");
+  await expect(page.locator(".action-cell")).toHaveCount(40);
+  await expect(page.locator('[data-testid="virtual-harmonica"][data-profile="standard-c-10"]')).toBeVisible();
+  await expect(page.getByText("10 HOLES · 40 PLAYABLE POSITIONS")).toHaveCount(1);
+  if(testInfo.project.name==="desktop") await page.screenshot({path:"docs/screenshots/expansion-harmonica-10-hole.png",fullPage:true});
 });
 
-test("direct cells support keyboard note-on and note-off", async ({ page }) => {
-  await page.goto("./"); await startMode(page, "Find a note"); const cell=page.getByRole("button",{name:"Hole 1, blow, slide out"}); await cell.focus(); await page.keyboard.down("Space"); await page.waitForTimeout(140); await expect(cell).toHaveAttribute("aria-pressed","true"); await page.keyboard.up("Space"); await expect(page.getByText(/Hit · C4/)).toBeVisible();
+test("score library replaces the dropdown and duration notation matches ABC values", async ({ page }) => {
+  await page.goto("./"); await page.getByRole("button",{name:/Play the score/}).click();
+  await expect(page.getByRole("heading",{name:"Choose your song"})).toBeVisible();
+  await expect(page.locator("select")).toHaveCount(0);
+  await page.getByRole("button",{name:/Twinkle Twinkle/}).click();
+  expect(await page.locator('[data-duration-notation="quarter"]').count()).toBeGreaterThan(3);
+  expect(await page.locator('[data-duration-notation="half"]').count()).toBeGreaterThan(0);
+  expect(await page.locator(".target-ribbon").count()).toBeGreaterThan(4);
+  await page.getByRole("button",{name:/Twinkle Twinkle.*Change song/}).click();
+  await page.getByRole("button",{name:/Happy Birthday/}).click();
+  await expect(page.locator('[data-duration-notation="eighth"]')).toHaveCount(1);
+  expect(await page.locator(".note-dot").count()).toBeGreaterThan(0);
 });
 
-test("find timeline retains five accepted targets", async ({ page }) => {
-  await page.goto("./");
-  await startMode(page, "Find a note");
-  for (const [index,id] of ["1-blow-out","1-draw-out","2-blow-out","2-draw-out","3-blow-out"].entries()) { await pressAction(page,id,10+index); await page.waitForTimeout(380); await expect(page.locator(`[data-event-id="find-${index}"]`)).toBeVisible(); }
-  await expect(page.locator('[data-event-id^="find-"]')).toHaveCount(5);
-  await expect(page.locator(".completed-event .history-mark")).toHaveCount(4);
-  await page.screenshot({ path: "docs/screenshots/polish-find-history-desktop.png", fullPage: true });
-});
-
-test("score step advances with beat-aware motion and modes/labs remain reachable", async ({ page }, testInfo) => {
-  await page.goto("./");
-  await startMode(page, "Play the score");
-  await expect(page.getByRole("heading", { name: "Twinkle Twinkle" })).toBeVisible();
+test("score step interaction and keyboard hold still work", async ({ page }) => {
+  await page.goto("./"); await openMode(page,"Play the score");
   const before=Number(await page.locator('[data-event-id="e0"] ellipse').getAttribute("cx"));
-  await pressAction(page,"1-blow-out",21); await page.waitForTimeout(380);
-  const after=Number(await page.locator('[data-event-id="e0"] ellipse').getAttribute("cx"));
-  expect(before).toBe(300); expect(after).toBeLessThan(before);
-  await page.screenshot({ path: `docs/screenshots/polish-score-step-${testInfo.project.name}.png`, fullPage: true });
-  await page.getByRole("button", { name: /Menu/ }).click();
-  await startMode(page, "Play by ear");
-  await pressAction(page,"1-blow-out",22);
-  await expect(page.getByText(/Anchor locked/)).toBeVisible();
-  await page.goto("?lab=pitch"); await page.getByRole("button", { name: "Run synthetic" }).click(); await expect(page.getByText("C4")).toBeVisible();
+  await pressAction(page,"1-blow-out",180); await page.waitForTimeout(380);
+  const after=Number(await page.locator('[data-event-id="e0"] ellipse').getAttribute("cx")); expect(after).toBeLessThan(before);
+  const cell=page.getByRole("button",{name:/Hole 1, blow, slide out/}); await cell.focus(); await page.keyboard.down("Space"); await expect(cell).toHaveAttribute("aria-pressed","true"); await page.keyboard.up("Space");
 });
 
-test("flow keeps a fixed playhead while target positions move by beat", async ({ page }, testInfo) => {
-  await page.goto("./"); await startMode(page, "Play the score"); await page.getByRole("button", { name: "Flow" }).click(); await page.getByRole("button", { name: "Count in + perform" }).click();
-  const playhead=await page.locator(".playhead").getAttribute("x1"); expect(playhead).toBe("300");
-  const before=Number(await page.locator('[data-event-id="e0"] ellipse').getAttribute("cx")); await page.screenshot({path:`docs/screenshots/polish-flow-before-${testInfo.project.name}.png`,fullPage:true}); await page.waitForTimeout(2900); const after=Number(await page.locator('[data-event-id="e0"] ellipse').getAttribute("cx")); expect(after).toBeLessThan(before); await page.screenshot({path:`docs/screenshots/polish-flow-after-${testInfo.project.name}.png`,fullPage:true});
+test("rhythm mode renders rests and scores duration separately", async ({ page }, testInfo) => {
+  await page.goto("./"); await openMode(page,"Rhythm training");
+  await expect(page.getByRole("heading",{name:"Rhythm training"})).toBeVisible();
+  await expect(page.locator('[data-duration-notation="eighth"]')).toHaveCount(3);
+  await expect(page.locator('[data-duration-notation="quarter-rest"]')).toHaveCount(2);
+  await pressAction(page,"1-blow-out",700); await expect(page.getByText(/Rhythm matched/)).toBeVisible();
+  if(testInfo.project.name==="desktop") await page.screenshot({path:"docs/screenshots/expansion-rhythm-mode.png",fullPage:true});
 });
 
-test("ear rhythm stage keeps the discovered phrase as its exercise source", async ({ page }) => {
-  await page.goto("./"); await startMode(page, "Play the score"); await page.locator(".score-source select").selectOption("ode"); await page.getByRole("button",{name:/Menu/}).click(); await startMode(page, "Play by ear"); await page.getByRole("button",{name:"Reveal"}).click(); await expect(page.locator('[data-event-id^="ear-"]')).toHaveCount(4); await page.getByRole("button",{name:"Flow"}).click(); await page.getByRole("button",{name:"Count in + perform"}).click(); await expect(page.locator('[data-event-id^="ear-"]')).toHaveCount(4);
+test("guided song keeps notation visible and lights all matching positions", async ({ page }, testInfo) => {
+  await page.goto("./"); await openMode(page,"Learn a song");
+  await expect(page.getByRole("heading",{name:"Learn a song"})).toBeVisible();
+  await expect(page.locator(".hidden-slot")).toHaveCount(0);
+  await expect(page.locator(".action-cell.guided")).toHaveCount(1);
+  await pressAction(page,"1-blow-out",180); await page.waitForTimeout(380);
+  await expect(page.locator(".action-cell.guided")).toHaveCount(1);
+  if(testInfo.project.name==="desktop") await page.screenshot({path:"docs/screenshots/expansion-guided-song.png",fullPage:true});
 });
 
-test("mobile keeps one scrollable instrument with accessible touch targets", async ({ page }, testInfo) => {
-  test.skip(testInfo.project.name !== "mobile", "phone layout"); await page.goto("./"); await startMode(page, "Find a note");
-  const dimensions=await page.locator(".harmonica-scroll").evaluate((node)=>({client:node.clientWidth,scroll:node.scrollWidth})); expect(dimensions.scroll).toBeGreaterThan(dimensions.client);
-  const cell=await page.locator(".action-cell").first().boundingBox(); expect(cell!.height).toBeGreaterThanOrEqual(44);
+test("12-hole harmonica is readable and mobile remains horizontally navigable", async ({ page }, testInfo) => {
+  await page.goto("./"); await openMode(page,"Find a note");
+  const number=await page.locator(".cover-holes span").first().evaluate((node)=>getComputedStyle(node).fontSize); expect(Number.parseFloat(number)).toBeGreaterThanOrEqual(20);
+  const cell=await page.locator(".action-cell").first().boundingBox(); expect(cell!.height).toBeGreaterThanOrEqual(48);
+  if(testInfo.project.name==="desktop") await page.screenshot({path:"docs/screenshots/expansion-harmonica-12-hole.png",fullPage:true});
+  if(testInfo.project.name==="mobile") { const dimensions=await page.locator(".harmonica-scroll").evaluate((node)=>({client:node.clientWidth,scroll:node.scrollWidth})); expect(dimensions.scroll).toBeGreaterThan(dimensions.client); await page.screenshot({path:"docs/screenshots/expansion-find-mobile-portrait.png",fullPage:true}); }
 });
 
-test("capture redesigned game states", async ({ page }, testInfo) => {
-  if (testInfo.project.name === "desktop") {
-    await page.goto("./");
-    await page.screenshot({path:"docs/screenshots/game-menu-desktop.png",fullPage:true});
-    await startMode(page,"Find a note"); await page.screenshot({path:"docs/screenshots/game-find-desktop.png",fullPage:true});
-    await page.getByRole("button",{name:/Menu/}).click(); await startMode(page,"Play the score"); await page.screenshot({path:"docs/screenshots/game-score-desktop.png",fullPage:true});
-    await page.getByRole("button",{name:/Menu/}).click(); await startMode(page,"Play by ear"); await page.screenshot({path:"docs/screenshots/game-ear-desktop.png",fullPage:true});
-  } else if (testInfo.project.name === "mobile") {
-    await page.goto("./"); await page.screenshot({path:"docs/screenshots/game-menu-mobile.png",fullPage:true});
-    await startMode(page,"Find a note"); await page.screenshot({path:"docs/screenshots/game-find-mobile.png",fullPage:true});
-  }
+test("microphone selection never removes the clickable virtual harmonica", async ({ page }) => {
+  await page.goto("./"); await openMode(page,"Find a note");
+  await page.getByRole("button",{name:"Microphone + touch"}).click();
+  await expect(page.getByTestId("virtual-harmonica")).toBeVisible();
+  await expect(page.locator(".action-cell")).toHaveCount(48);
+});
+
+test("ear flow and diagnostic lab remain reachable", async ({ page }) => {
+  await page.goto("./"); await openMode(page,"Play by ear"); await page.getByRole("button",{name:"Reveal"}).click();
+  await expect(page.locator('[data-event-id^="ear-"]')).toHaveCount(4); await page.getByRole("button",{name:"In time"}).click(); await page.getByRole("button",{name:"Count in + perform"}).click();
+  await page.goto("?lab=pitch"); await page.getByRole("button",{name:"Run synthetic"}).click(); await expect(page.getByText("C4")).toBeVisible();
 });

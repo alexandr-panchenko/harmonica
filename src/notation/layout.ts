@@ -32,8 +32,12 @@ const SHARP_SPELLINGS = [
   ["C"], ["C", "sharp"], ["D"], ["D", "sharp"], ["E"], ["F"],
   ["F", "sharp"], ["G"], ["G", "sharp"], ["A"], ["A", "sharp"], ["B"],
 ] as const;
+const FLAT_SPELLINGS = [
+  ["C"], ["D", "flat"], ["D"], ["E", "flat"], ["E"], ["F"],
+  ["G", "flat"], ["G"], ["A", "flat"], ["A"], ["B", "flat"], ["B"],
+] as const;
 
-export function writtenPitchFromMidi(midi: number): WrittenPitch {
-  const [step, accidental] = SHARP_SPELLINGS[((midi % 12) + 12) % 12]!;
+export function writtenPitchFromMidi(midi: number, preferFlats = false): WrittenPitch {
+  const [step, accidental] = (preferFlats ? FLAT_SPELLINGS : SHARP_SPELLINGS)[((midi % 12) + 12) % 12]!;
   return { step, accidental, octave: Math.floor(midi / 12) - 1 };
 }

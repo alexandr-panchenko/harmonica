@@ -14,16 +14,33 @@ export function actionMidi(hole: number, breath: Breath, slide: Slide): number {
   return base + octave + (slide === "in" ? 1 : 0);
 }
 
-const actions: HarmonicaAction[] = [];
-for (let hole = 1; hole <= 12; hole++) for (const breath of ["blow", "draw"] as const) for (const slide of ["out", "in"] as const) {
-  actions.push({ id: `${hole}-${breath}-${slide}`, hole, breath, slide, canonicalMidi: actionMidi(hole, breath, slide) });
+function createActions(holeCount: number): HarmonicaAction[] {
+  const actions: HarmonicaAction[] = [];
+  for (let hole = 1; hole <= holeCount; hole++) for (const breath of ["blow", "draw"] as const) for (const slide of ["out", "in"] as const) {
+    actions.push({ id: `${hole}-${breath}-${slide}`, hole, breath, slide, canonicalMidi: actionMidi(hole, breath, slide) });
+  }
+  return actions;
 }
 
-export const STANDARD_C12: HarmonicaProfile = {
-  id: "standard-c-12", name: "12-hole Chromatic · C", description: "Solo tuning, preserving the legacy trainer mapping", holeCount: 12,
-  keyLabel: "C", concertPitchTranspositionSemitones: 0, referenceA4Hz: 440, valveConfiguration: "unknown", physicalActions: actions,
-  playablePitches: actions.map((action) => ({ id: `pitch-${action.id}`, midi: action.canonicalMidi, actionId: action.id, technique: "normal" })),
-};
+function chromaticProfile(holeCount: 10 | 12): HarmonicaProfile {
+  const physicalActions = createActions(holeCount);
+  return {
+    id: `standard-c-${holeCount}`,
+    name: `${holeCount}-hole Chromatic · C`,
+    description: "Solo-tuned chromatic harmonica with direct slide-in and slide-out actions",
+    holeCount,
+    keyLabel: "C",
+    concertPitchTranspositionSemitones: 0,
+    referenceA4Hz: 440,
+    valveConfiguration: "unknown",
+    physicalActions,
+    playablePitches: physicalActions.map((action) => ({ id: `pitch-${action.id}`, midi: action.canonicalMidi, actionId: action.id, technique: "normal" })),
+  };
+}
+
+export const STANDARD_C10 = chromaticProfile(10);
+export const STANDARD_C12 = chromaticProfile(12);
+export const HARMONICA_PROFILES = [STANDARD_C10, STANDARD_C12] as const;
 
 export function actionsForMidi(profile: HarmonicaProfile, midi: number): HarmonicaAction[] { return profile.physicalActions.filter((action) => action.canonicalMidi === midi); }
 export function profileRange(profile: HarmonicaProfile): [number, number] { const values = profile.playablePitches.map((pitch) => pitch.midi); return [Math.min(...values), Math.max(...values)]; }

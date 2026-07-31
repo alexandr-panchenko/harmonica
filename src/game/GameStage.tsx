@@ -1,7 +1,8 @@
 import type { MelodyEvent } from "../music/melody";
 import type { PitchTracePoint } from "../exercises/evaluation";
 import { writtenPitchFromMidi, layoutWrittenPitch } from "../notation/layout";
-import { AccidentalGlyph, RestGlyph, TrebleClef } from "../notation/MusicGlyphs";
+import { AccidentalGlyph, NoteGlyph, RestGlyph, TrebleClef } from "../notation/MusicGlyphs";
+import { teachingNoteName, type NamingSystem } from "../music/naming";
 import { activeBeat, eventWidth, eventX, PLAYHEAD_X, traceX } from "./timeline";
 
 export interface TimelinePerformance {
@@ -24,12 +25,13 @@ interface Props {
   title: string;
   showNoteNames?: boolean;
   pixelsPerBeat?: number;
+  namingSystem?: NamingSystem;
 }
 
 const WIDTH = 900;
 const staffYForMidi = (midi: number) => layoutWrittenPitch(writtenPitchFromMidi(Math.round(midi))).y;
 
-export function GameStage({ events, activeIndex, hidden, currentBeat, trace = [], performance = [], nowMs, status = "idle", title, showNoteNames = false, pixelsPerBeat }: Props) {
+export function GameStage({ events, activeIndex, hidden, currentBeat, trace = [], performance = [], nowMs, status = "idle", title, showNoteNames = false, pixelsPerBeat, namingSystem = "letters" }: Props) {
   const beat = currentBeat ?? activeBeat(events, activeIndex);
   const clock = nowMs ?? trace.at(-1)?.time ?? performance.at(-1)?.startedAt ?? 0;
   return <section className={`game-stage ${status}`} aria-label={`${title} music staff`}>
@@ -43,15 +45,15 @@ export function GameStage({ events, activeIndex, hidden, currentBeat, trace = []
         {events.map((event, index) => {
           const x = eventX(event, beat, pixelsPerBeat), active = index === activeIndex;
           if (x < 90 || x > WIDTH + 80) return null;
-          if (event.kind === "rest") return <g key={event.id} className={active ? "active-event" : ""}><RestGlyph x={x} y={126} className="rest-path" /></g>;
+          if (event.kind === "rest") return <g key={event.id} data-duration-notation={event.durationBeats >= 4 ? "whole-rest" : event.durationBeats >= 2 ? "half-rest" : event.durationBeats <= .75 ? "eighth-rest" : "quarter-rest"} className={active ? "active-event" : ""}><RestGlyph x={x} y={126} durationBeats={event.durationBeats} className="rest-path" /></g>;
           const pitch = event.writtenPitch ?? writtenPitchFromMidi(event.midi ?? 60), layout = layoutWrittenPitch(pitch), concealed = hidden && index >= activeIndex;
           return <g key={event.id} data-event-id={event.id} data-pitch-y={layout.y} className={`${active ? "active-event" : ""} ${index < activeIndex ? "completed-event" : ""}`}>
             <rect x={x - 8} y={layout.y - 7} width={eventWidth(event,pixelsPerBeat)} height="14" rx="7" className="target-ribbon" />
             {concealed ? <g><circle cx={x} cy="126" r="14" className="hidden-slot"/><text x={x} y="131" textAnchor="middle" className="slot-text">?</text></g> : <g>
               {layout.ledgerLines.map((y) => <line key={y} x1={x - 17} x2={x + 17} y1={y} y2={y} className="ledger-line" />)}
               <AccidentalGlyph x={x - 21} y={layout.y} accidental={pitch.accidental} />
-              <ellipse cx={x} cy={layout.y} rx="11" ry="8" className="note-head"/><line x1={x + 9} x2={x + 9} y1={layout.y} y2={layout.y - 42} className="note-stem"/>
-              {showNoteNames && <text x={x} y="218" textAnchor="middle" className="note-label">{pitch.step}{pitch.octave}</text>}
+              <NoteGlyph x={x} y={layout.y} durationBeats={event.durationBeats} />
+              {showNoteNames && event.midi !== undefined && <text x={x} y="218" textAnchor="middle" className="note-label">{teachingNoteName(event.midi,namingSystem)}</text>}
               {index < activeIndex && <text x={x} y="205" textAnchor="middle" className="history-mark" aria-label="correct answer">✓</text>}
             </g>}
           </g>;
