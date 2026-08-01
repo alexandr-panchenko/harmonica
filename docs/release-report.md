@@ -1,8 +1,9 @@
 # Release report — two-row instrument and visible learning aids
 
-Status: local release gate passed; pending the final `main` push, Pages deployment, and deployed smoke test.
+Status: released to `main`, deployed to GitHub Pages, and verified in production.
 
 - Starting `main`: `13eca3aad297817033903ed63424ee47252fb98b` (matched fetched `origin/main` on 2026-08-01).
+- Implementation commit: `925bc7a9f44ce3ce26428ed2d7c341c687f1550e`.
 - Production URL: <https://alexandr-panchenko.github.io/harmonica/>.
 - Scope: finish the existing instrument profiles, learning aids, discoverability, typography, and contrast without adding modes.
 
@@ -78,6 +79,6 @@ Local release gate on 2026-08-01:
 - `bun run test:browser`: 37 passed across desktop, Pixel 7 portrait, and Pixel 7 landscape; two viewport-specific skips;
 - `bun run test:production`: 12 passed against the production preview; one phone-only skip in the desktop production project.
 
-The final commit SHA and deployed-production result are recorded in the delivery report after Pages completes.
+GitHub Actions run `30684823921` completed successfully for the implementation commit: both the build and Pages deployment jobs passed. The same production Playwright suite was then run against <https://alexandr-panchenko.github.io/harmonica/>: 12 applicable tests passed with one intentional phone-only skip in the desktop project. Full-size production desktop and 390 px phone screenshots were visually checked and matched the accepted pass 2 for two-row structure, labels, controls, horizontal scrolling, typography, and contrast.
 
 Known limitations remain unchanged: main-thread `AnalyserNode` capture; a monodic ABC subset without tuplets/key-signature carry/ties; pitch-shifted samples between sparse high source zones; no continuous virtual bend gesture; browser-native WebM fixture export; aggregate flow review; and the need for the existing short owner/device check for real-room microphone behavior.
