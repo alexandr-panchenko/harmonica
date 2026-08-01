@@ -18,16 +18,12 @@ async function chooseAid(page: Page, group: string, value: "Off" | "On") {
   await page.getByRole("group", { name: group }).getByRole("button", { name: value, exact: true }).click();
 }
 
-test("main menu exposes five learning intents and visible player setup", async ({ page }) => {
+test("main menu is focused on the five learning intents", async ({ page }) => {
   await page.goto("./");
   for (const name of ["Find a note", "Play the score", "Play by ear", "Rhythm training", "Learn a song"]) {
     await expect(page.getByRole("button", { name: new RegExp(name) })).toBeVisible();
   }
-  await expect(page.getByRole("button", { name: "Instrument: 10 holes" })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Instrument: 12 holes" })).toBeVisible();
-  await expect(page.getByRole("group", { name: "Staff note names" })).toBeVisible();
-  await expect(page.getByRole("group", { name: "Harmonica note names" })).toBeVisible();
-  await expect(page.getByRole("group", { name: "Note naming" })).toBeVisible();
+  await expect(page.getByRole("region", { name: "Player setup" })).toHaveCount(0);
 });
 
 test("harmonica always has two breath rows and two direct halves per hole", async ({ page }) => {
@@ -41,13 +37,29 @@ test("harmonica always has two breath rows and two direct halves per hole", asyn
   await expect(page.locator(".hole-actions")).toHaveCount(24);
   for (const group of await page.locator(".hole-actions").all()) await expect(group.locator(".action-cell")).toHaveCount(2);
   await expect(page.locator(".action-cell")).toHaveCount(48);
+  await expect(page.locator(".slide-icon")).toHaveCount(48);
+  await expect(page.getByTestId("virtual-harmonica").getByText("OUT", { exact: true })).toHaveCount(0);
+  await expect(page.getByTestId("virtual-harmonica").getByText("IN", { exact: true })).toHaveCount(0);
+
+  const sliderPositions = await page.evaluate(() => ({
+    out: Number.parseFloat(getComputedStyle(document.querySelector(".slide-out .slide-icon-knob")!).left),
+    in: Number.parseFloat(getComputedStyle(document.querySelector(".slide-in .slide-icon-knob")!).left),
+  }));
+  expect(sliderPositions.in).toBeGreaterThan(sliderPositions.out);
+
+  const setupFollowsInstrument = await page.evaluate(() => {
+    const instrument = document.querySelector('[data-testid="virtual-harmonica"]')!;
+    const setup = document.querySelector(".player-setup")!;
+    return Boolean(instrument.compareDocumentPosition(setup) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(setupFollowsInstrument).toBe(true);
 });
 
 test("visible instrument selector switches full 10-hole and 12-hole models and persists", async ({ page }) => {
   await page.goto("./");
+  await openMode(page, "Find a note");
   await page.getByRole("button", { name: "Instrument: 10 holes" }).click();
   await expect(page.getByRole("button", { name: "Instrument: 10 holes" })).toHaveAttribute("aria-pressed", "true");
-  await openMode(page, "Find a note");
   await expect(page.locator(".hole-number")).toHaveCount(10);
   await expect(page.locator(".action-cell")).toHaveCount(40);
   await expect(page.getByTestId("virtual-harmonica")).toHaveAttribute("data-profile", "standard-c-10");
@@ -55,8 +67,8 @@ test("visible instrument selector switches full 10-hole and 12-hole models and p
   await page.getByLabel("Accidentals").selectOption("chromatic");
   await expect(page.getByText("33 possible pitches · anti-repeat shuffle")).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("button", { name: "Instrument: 10 holes" })).toHaveAttribute("aria-pressed", "true");
   await openMode(page, "Find a note");
+  await expect(page.getByRole("button", { name: "Instrument: 10 holes" })).toHaveAttribute("aria-pressed", "true");
   await expect(page.locator(".action-cell")).toHaveCount(40);
   await page.getByRole("button", { name: "Instrument: 12 holes" }).click();
   await expect(page.locator(".hole-number")).toHaveCount(12);
@@ -95,10 +107,10 @@ test("learning-aid and naming preferences survive reload", async ({ page }) => {
   await chooseAid(page, "Harmonica note names", "On");
   await page.getByRole("group", { name: "Note naming" }).getByRole("button", { name: /Solfège/ }).click();
   await page.reload();
+  await openMode(page, "Find a note");
   await expect(page.getByRole("group", { name: "Staff note names" }).getByRole("button", { name: /On/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("group", { name: "Harmonica note names" }).getByRole("button", { name: /On/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByRole("group", { name: "Note naming" }).getByRole("button", { name: /Solfège/ })).toHaveAttribute("aria-pressed", "true");
-  await openMode(page, "Find a note");
   await expect(page.locator('[data-action-id="1-blow-out"] strong')).toHaveText("Do4");
 });
 
@@ -137,8 +149,8 @@ test("score library and duration notation remain intact", async ({ page }) => {
 
 test("guided song uses the selected profile and keeps notation visible", async ({ page }) => {
   await page.goto("./");
-  await page.getByRole("button", { name: "Instrument: 10 holes" }).click();
   await openMode(page, "Learn a song");
+  await page.getByRole("button", { name: "Instrument: 10 holes" }).click();
   await expect(page.locator(".hidden-slot")).toHaveCount(0);
   await expect(page.getByTestId("virtual-harmonica")).toHaveAttribute("data-profile", "standard-c-10");
   await expect(page.locator(".action-cell")).toHaveCount(40);
@@ -152,14 +164,14 @@ test("important harmonica and control typography meets readable minimums", async
   const sizes = await page.evaluate(() => ({
     hole: Number.parseFloat(getComputedStyle(document.querySelector(".hole-number")!).fontSize),
     breath: Number.parseFloat(getComputedStyle(document.querySelector(".breath-label b")!).fontSize),
-    action: Number.parseFloat(getComputedStyle(document.querySelector(".slide-name")!).fontSize),
+    sliderWidth: Number.parseFloat(getComputedStyle(document.querySelector(".slide-icon")!).width),
     note: Number.parseFloat(getComputedStyle(document.querySelector(".action-cell strong")!).fontSize),
     setting: Number.parseFloat(getComputedStyle(document.querySelector(".aid-control > span")!).fontSize),
     control: Number.parseFloat(getComputedStyle(document.querySelector(".choice-row button")!).fontSize),
   }));
   expect(sizes.hole).toBeGreaterThanOrEqual(18);
   expect(sizes.breath).toBeGreaterThanOrEqual(13);
-  expect(sizes.action).toBeGreaterThanOrEqual(11);
+  expect(sizes.sliderWidth).toBeGreaterThanOrEqual(24);
   expect(sizes.note).toBeGreaterThanOrEqual(12);
   expect(sizes.setting).toBeGreaterThanOrEqual(14);
   expect(sizes.control).toBeGreaterThanOrEqual(14);

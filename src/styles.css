@@ -1338,25 +1338,17 @@ button.primary {
   padding-top: 1rem;
 }
 
-/* Visible player setup */
-.menu-actions {
-  min-width: 0;
-}
+/* Player setup follows the virtual instrument on exercise screens. */
 .player-setup {
   display: grid;
   grid-template-columns: minmax(250px, 0.7fr) minmax(620px, 1.8fr);
   gap: 0.75rem;
-  margin: 0 0 0.8rem;
+  margin: 0.85rem 0 0;
   padding: 0.8rem;
   background: #071820e8;
   border: 1px solid #31515b;
   border-radius: 15px;
   box-shadow: 0 12px 32px #0005;
-}
-.menu-actions .player-setup {
-  grid-template-columns: 1fr;
-  padding: 0.65rem;
-  margin-bottom: 0.7rem;
 }
 .player-setup fieldset {
   min-width: 0;
@@ -1432,13 +1424,6 @@ button.primary {
 .choice-row.naming button {
   line-height: 1.15;
 }
-.menu-actions .learning-aids {
-  grid-template-columns: 1fr;
-}
-.menu-actions .aid-control {
-  grid-template-columns: 1fr 1.35fr;
-  align-items: center;
-}
 
 /* One continuous chromatic harmonica with two breath rows. */
 .virtual-panel,
@@ -1464,22 +1449,6 @@ button.primary {
   margin-top: 0.2rem;
   color: #a7bec2;
   font-size: 13px;
-}
-.slide-key {
-  display: flex;
-  gap: 0.55rem;
-  color: #e6f2f1;
-  font: 900 12px var(--mono);
-}
-.slide-key span {
-  padding: 0.35rem 0.55rem;
-  border: 1px solid #46636b;
-  border-radius: 7px;
-  background: #0d2630;
-}
-.slide-key span:last-child {
-  color: #ded7ff;
-  border-color: #7569a5;
 }
 .harmonica-scroll {
   overflow-x: auto;
@@ -1632,26 +1601,38 @@ button.primary {
   background: linear-gradient(180deg, #252f48, #131f31);
 }
 .slide-action {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 3px;
+  display: grid;
+  place-items: center;
+  min-height: 18px;
 }
-.slide-symbol {
-  color: #dbeae9;
-  font: 900 16px var(--mono);
-  line-height: 1;
+.slide-icon {
+  position: relative;
+  display: block;
+  width: 28px;
+  height: 14px;
+  border: 2px solid #dbeae9;
+  border-radius: 999px;
+  background: #071820;
+  box-shadow: inset 0 0 0 1px #ffffff1f;
 }
-.slide-in .slide-symbol {
-  color: #cdbfff;
+.slide-icon-knob {
+  position: absolute;
+  top: 50%;
+  left: 2px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f4fbfa;
+  box-shadow: 0 0 0 1px #071820;
+  transform: translateY(-50%);
 }
-.slide-name {
-  color: #dbeae9;
-  font: 900 12px var(--mono);
-  letter-spacing: 0.03em;
+.slide-in .slide-icon {
+  border-color: #d8ceff;
+  background: #3b335d;
 }
-.slide-in .slide-name {
-  color: #d8ceff;
+.slide-in .slide-icon-knob {
+  left: 14px;
+  background: #e7e1ff;
 }
 .action-cell strong {
   color: #fff;
@@ -1760,9 +1741,6 @@ button.primary {
   }
 }
 @media (max-width: 600px) {
-  .slide-key {
-    display: none;
-  }
   .main-menu {
     overflow: auto;
     display: block;
@@ -1829,8 +1807,7 @@ button.primary {
   .learning-aids {
     grid-template-columns: 1fr;
   }
-  .aid-control,
-  .menu-actions .aid-control {
+  .aid-control {
     grid-template-columns: 1fr 1.35fr;
     align-items: center;
   }

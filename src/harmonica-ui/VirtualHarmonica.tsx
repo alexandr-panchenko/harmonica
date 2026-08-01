@@ -18,10 +18,7 @@ const BREATHS: { breath: Breath; symbol: string; label: string; help: string }[]
   { breath: "draw", symbol: "↓", label: "DRAW", help: "Inhale" },
 ];
 
-const SLIDES: { slide: Slide; symbol: string; label: string }[] = [
-  { slide: "out", symbol: "○", label: "OUT" },
-  { slide: "in", symbol: "●", label: "IN" },
-];
+const SLIDES: Slide[] = ["out", "in"];
 
 export function VirtualHarmonica({
   profile,
@@ -58,7 +55,7 @@ export function VirtualHarmonica({
     onEnd(action, performance.now() - at);
   };
 
-  const actionButton = (hole: number, breath: Breath, { slide, symbol, label }: (typeof SLIDES)[number]) => {
+  const actionButton = (hole: number, breath: Breath, slide: Slide) => {
     const action = actionFor(profile, hole, breath, slide);
     const keyboardKey = `keyboard-${action.id}`;
     const detected = detectedMidis.includes(action.canonicalMidi);
@@ -99,7 +96,7 @@ export function VirtualHarmonica({
         }
       }}
     >
-      <span className="slide-action"><span className="slide-symbol" aria-hidden="true">{symbol}</span><span className="slide-name">{label}</span></span>
+      <span className="slide-action" aria-hidden="true"><span className="slide-icon"><span className="slide-icon-knob" /></span></span>
       {showLabels && <strong>{note}</strong>}
       {(detected || guided || outcome) && <span className="action-state" aria-hidden="true">{outcome === "correct" ? "✓" : outcome === "incorrect" ? "×" : detected ? "◉" : "◆"}</span>}
     </button>;
@@ -107,8 +104,7 @@ export function VirtualHarmonica({
 
   return <section className="virtual-panel" data-testid="virtual-harmonica" data-profile={profile.id}>
     <div className="instrument-title">
-      <span><b>{profile.holeCount}-HOLE CHROMATIC · C</b><small>Hold either OUT or IN half to play and set duration</small></span>
-      <div className="slide-key" aria-label="Slide position key"><span>○ OUT</span><span>● IN</span></div>
+      <span><b>{profile.holeCount}-HOLE CHROMATIC · C</b><small>Hold either slider position to play and set duration</small></span>
     </div>
     <div className="harmonica-scroll">
       <div className="harmonica-body" style={{ "--hole-count": profile.holeCount } as React.CSSProperties}>

@@ -24,9 +24,9 @@ Baseline captures:
 
 ## Implementation
 
-`VirtualHarmonica` now renders exactly two `.breath-row` elements. Each numbered hole is one `.hole-actions` group containing two direct buttons: `○ OUT` and `● IN`. Hole numbers appear once per column on stable high-contrast plates. The shared cover, mouthpiece, rail, and right-hand slide knob read as one continuous instrument. Twelve holes remain full-size on phones and use horizontal scrolling; each half is at least 40 × 68 CSS px in portrait.
+`VirtualHarmonica` now renders exactly two `.breath-row` elements. Each numbered hole is one `.hole-actions` group containing two direct buttons. Compact slider pictograms show the knob in its released or pressed position without visible `OUT` / `IN` words; button accessible names retain `slide out` / `slide in`. Hole numbers appear once per column on stable high-contrast plates. The shared cover, mouthpiece, rail, and right-hand slide knob read as one continuous instrument. Twelve holes remain full-size on phones and use horizontal scrolling; each half is at least 40 × 68 CSS px in portrait.
 
-Player setup is visible without opening Settings on both the main menu and game screen. It exposes:
+The main menu now contains only the five training choices. Player setup is visible without opening Settings directly below the harmonica on every game screen. It exposes:
 
 - `INSTRUMENT`: `10 holes` / `12 holes`;
 - `Staff note names`: Off / On;
@@ -41,19 +41,19 @@ Pressed, microphone-detected, guided, correct, and incorrect actions use differe
 
 ## Typography and contrast audit
 
-The conflicting historical two-row and four-lane CSS blocks were removed and replaced by one formatted instrument section. No user-significant text in `src/styles.css` remains at 7–9 px. Computed browser checks enforce: hole numbers 20 px, breath names 14 px, OUT/IN 12 px, harmonica note names 13 px, setup labels and buttons 14 px. Mobile keeps those sizes.
+The conflicting historical two-row and four-lane CSS blocks were removed and replaced by one formatted instrument section. No user-significant text in `src/styles.css` remains at 7–9 px. Computed browser checks enforce: hole numbers 20 px, breath names 14 px, slider pictograms 28 px wide, harmonica note names 13 px, setup labels and buttons 14 px. Mobile keeps those sizes.
 
 Representative WCAG contrast calculations:
 
 - hole number: 17.24:1;
-- OUT label against the lighter action gradient stop: 10.62:1;
-- IN label: 8.99:1;
+- released slider icon against its action background: greater than 7:1;
+- pressed slider icon against its action background: greater than 7:1;
 - BLOW/DRAW: 17.24:1;
 - learning-aid labels: 15.49:1;
 - inactive control text: 12.96:1;
 - instrument help text: 10.06:1.
 
-Two full screenshot iterations were reviewed at original size. Pass 1 identified an overly wide mobile slide legend and a stale simulated-microphone capture. Pass 2 removes that phone legend while retaining OUT/IN inside every action and shows all MIDI-72 matching positions with outline, glow, and `◉` markers.
+Two full screenshot iterations were reviewed at original size. Pass 1 identified an overly wide mobile slide legend and a stale simulated-microphone capture. Pass 2 removed that phone legend and showed all MIDI-72 matching positions with outline, glow, and `◉` markers. The follow-up capture set verifies the later menu simplification, below-instrument setup placement, and icon-only slider positions.
 
 Final acceptance captures use the `pass2-*` prefix:
 
@@ -67,6 +67,16 @@ Final acceptance captures use the `pass2-*` prefix:
 
 The matching screenshot uses the same rendered action states with a scripted stable MIDI 72 so all duplicate physical positions can be inspected deterministically without depending on room audio.
 
+Follow-up placement/icon captures use the `followup-*` prefix:
+
+- `followup-menu-desktop.png`
+- `followup-12-labels-off-desktop.png`
+- `followup-12-labels-on-desktop.png`
+- `followup-10-labels-on-desktop.png`
+- `followup-microphone-matching-desktop.png`
+- `followup-learning-aids-desktop.png`
+- `followup-find-mobile.png`
+
 ## Verification
 
 Local release gate on 2026-08-01:
@@ -75,7 +85,7 @@ Local release gate on 2026-08-01:
 - `bun run typecheck`: passed;
 - `bun test`: 33 passed, 245 assertions;
 - `bun run benchmark:pitch`: MPM identity remained 100% for all four synthetic tone fixtures; colored noise, breath noise, and clicks produced zero stable frames/segments;
-- `bun run build`: passed, 359.67 kB JS (114.88 kB gzip) and 27.26 kB CSS (7.47 kB gzip);
+- `bun run build`: passed, 359.33 kB JS (114.79 kB gzip) and 26.94 kB CSS (7.43 kB gzip);
 - `bun run test:browser`: 37 passed across desktop, Pixel 7 portrait, and Pixel 7 landscape; two viewport-specific skips;
 - `bun run test:production`: 12 passed against the production preview; one phone-only skip in the desktop production project.
 
