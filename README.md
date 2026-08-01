@@ -30,7 +30,11 @@ Vite serves the repository under `/harmonica/`, matching GitHub Pages. Microphon
 - **Learn a song:** fully visible notation with the current note and every matching harmonica position highlighted in step or timed practice.
 - **Diagnostics:** `?lab=pitch`, `?lab=fixtures`, `?lab=timing`, and `?lab=calibration`.
 
-The typed instrument profiles expose all 40 or 48 normal hole/breath/slide actions directly. Press and hold one position to sound and time it. Staff and instrument labels are independent, with letter-name or Do–Re–Mi–Fa–Sol–La–Si display. The staff uses duration-correct whole, half, quarter, eighth, dotted, and rest glyphs while retaining game ribbons.
+Player setup is visible both on the main menu and every exercise screen. Its segmented controls select **10 holes / 12 holes**, independently toggle **Staff note names** and **Harmonica note names**, and switch **Letters / Solfège**. These choices persist in `localStorage`; no visit to the advanced settings drawer is required.
+
+The virtual instrument is one horizontally scrollable harmonica with exactly two breath rows: **BLOW** and **DRAW**. Every numbered hole contains two independently clickable/touchable halves, **○ OUT** and **● IN**; holding either half captures duration. The 10-hole and 12-hole profiles are built from separate explicit typed tables, exposing 40 and 48 direct physical actions respectively. In particular, compact 10-hole holes 9–10 use the owner-supplied `E6/D6` and `G6/F6` slide-out layout instead of truncating the 12-hole octave pattern. Stable microphone pitch continues to mark every matching physical action in the selected profile.
+
+The staff uses duration-correct whole, half, quarter, eighth, dotted, and rest glyphs while retaining game ribbons. Enabled note names include octave numbers and update immediately between C–D–E letter naming and Do–Re–Mi–Fa–Sol–La–Si.
 
 The pitch lab compares MPM, YIN, and autocorrelation against the same PCM frame path used by uploaded audio. Microphone startup calibrates ambient noise for 750 ms and can be recalibrated from the input deck. The fixture recorder creates a local ZIP and manifest. Instrument intonation calibration is stored in `localStorage`; it changes intonation centers, never note identity.
 
