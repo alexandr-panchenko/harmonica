@@ -4,20 +4,16 @@ dist/
 .bun-tmp/
 test-results/
 playwright-report/
-HARMONICA_TRAINER_AGENT_PROMPT.md
-HARMONICA_TRAINER_AUTONOMOUS_HANDOFF.md
-HARMONICA_TRAINER_REAL_AUDIO_FIXTURES.md
-HARMONICA_TRAINER_POLISH_HANDOFF_BUNDLE/
 scratch/
 *.webm
 *.wav
 *.zip
 
-# Local sprint handoffs and visual references (delivery inputs, not app assets)
-HARMONICA_TRAINER_DESIGN_POLISH_AGENT_PROMPT.md
-HARMONICA_TRAINER_DESIGN_POLISH_HANDOFF.md
-HARMONICA_TRAINER_EXPANSION_AGENT_PROMPT.md
-HARMONICA_TRAINER_EXPANSION_HANDOFF.md
-reference-current-design-critique.png
-reference-current-ui.png
-reference-harmonica-layout-photo.jpg
+# Local task handoffs and critique references are delivery inputs, not canonical repo docs.
+# Keep durable plans under docs/ instead.
+/HARMONICA_TRAINER_*HANDOFF*.md
+/HARMONICA_TRAINER_*PROMPT*.md
+/HARMONICA_TRAINER_*BUNDLE/
+/reference-*.png
+/reference-*.jpg
+/reference-*.jpeg
