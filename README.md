@@ -2,6 +2,12 @@
 
 A static, local-first trainer for 10-hole and 12-hole chromatic harmonicas. It teaches note location, score reading, rhythmic performance, guided beginner songs, and absolute or relative ear playing. The persistent on-screen instrument accepts touch input and mirrors stable microphone pitches.
 
+## Development roadmap
+
+The canonical plan for the next notation and virtual-instrument redesign, later Cloudflare persistence, melody authoring, achievements, and the future improvisation game is [`docs/product-roadmap.md`](docs/product-roadmap.md). It supersedes the local sprint prompts and handoff documents used during the initial build.
+
+The next implementation milestone is deliberately split into two stages: isolated `/lab/staff-design` and `/lab/harmonica-design` experiments first, then production migration only after owner review.
+
 ## Run and validate
 
 Requirements: [Bun](https://bun.sh/) 1.2.5 or later and a modern Chromium, Firefox, or Safari browser.
