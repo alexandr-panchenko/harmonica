@@ -11,6 +11,7 @@
     "test": "bun test",
     "test:browser": "playwright test",
     "test:production": "playwright test --config=playwright.production.config.ts",
+    "capture:labs": "bun run scripts/capture-design-labs.ts",
     "benchmark:pitch": "bun run scripts/pitch-benchmark.ts"
   },
   "dependencies": {

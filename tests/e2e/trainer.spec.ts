@@ -208,3 +208,31 @@ test("ear flow and diagnostic lab remain reachable", async ({ page }) => {
   await page.getByRole("button", { name: "Run synthetic" }).click();
   await expect(page.getByText("C4")).toBeVisible();
 });
+
+test("isolated staff lab renders every comparison path and canonical anchors", async ({ page }) => {
+  await page.goto("lab/staff-design/");
+  await expect(page.getByTestId("staff-design-lab")).toBeVisible();
+  await expect(page.locator(".abcjs-note").first()).toBeVisible();
+  await expect(page.locator("[data-written-event-id]").first()).toBeVisible();
+  await expect(page.locator(".duration-ribbon").first()).toBeVisible();
+  for (const mode of ["custom", "standard", "timeline", "timeline-game", "standard-game"]) {
+    await page.getByLabel("Render mode").selectOption(mode);
+    await expect(page.locator('[data-render-mode="' + mode + '"]')).toBeVisible();
+  }
+  await page.getByLabel("Fixture").selectOption("compound-meter");
+  await expect(page.locator(".abcjs-note").first()).toBeVisible();
+});
+
+test("isolated harmonica lab exposes 10/12 direct geometry and ambiguity-safe slider", async ({ page }) => {
+  await page.goto("lab/harmonica-design/");
+  await expect(page.getByTestId("harmonica-design-lab")).toBeVisible();
+  await expect(page.locator(".physical-hole")).toHaveCount(12);
+  await expect(page.locator(".action-quadrants button")).toHaveCount(48);
+  await page.getByLabel("Instrument state").selectOption("mic-ambiguous");
+  await expect(page.getByTestId("lab-harmonica")).toHaveAttribute("data-slider", "neutral");
+  await page.getByRole("button", { name: "10 holes" }).click();
+  await expect(page.locator(".physical-hole")).toHaveCount(10);
+  await expect(page.locator(".action-quadrants button")).toHaveCount(40);
+  await page.locator('[data-action-id="5-blow-in"]').click();
+  await expect(page.getByTestId("lab-harmonica")).toHaveAttribute("data-slider", "in");
+});

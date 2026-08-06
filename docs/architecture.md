@@ -15,4 +15,6 @@ Virtual actions or microphone PCM → ambient gate → estimator → tracker →
 
 Exercise modes use explicit `mode`, `practice`, and input variants. Score, guided-song, rhythm, and discovered-ear stages share the canonical `Melody` event model. Flow targets use beat coordinates around a fixed playhead; performed segments and traces use monotonic timestamps. Find mode keeps the active target plus four accepted predecessors and samples from a profile/range/accidental-constrained pool with recent-note and scale-run suppression. Realtime trace history is aged by elapsed time rather than array index.
 
+The isolated M10 staff lab adds a proposed `AbcAdapter` boundary: it alone reads abcjs parse/visual-object details and exposes canonical written events, tie-merged sounding events, source ranges, and measured render anchors. The lab does not route production scoring or `GameStage` through that boundary yet. The harmonica lab likewise generates normalized four-zone hit geometry from the existing typed profiles without replacing `VirtualHarmonica`.
+
 Assumptions: both release profiles use standard C solo tuning; microphone input grades sounding pitch and highlights every matching position, never claiming to infer a unique hole, breath, or slide; virtual bends remain a data-model extension; imported music must be monodic.

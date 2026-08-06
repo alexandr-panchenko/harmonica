@@ -8,6 +8,13 @@ The canonical plan for the next notation and virtual-instrument redesign, later 
 
 The next implementation milestone is deliberately split into two stages: isolated `/lab/staff-design` and `/lab/harmonica-design` experiments first, then production migration only after owner review.
 
+The M10 owner-review laboratories are available at:
+
+- [`/lab/staff-design`](https://alexandr-panchenko.github.io/harmonica/lab/staff-design/) — handwritten baseline versus four abcjs engraving/gameplay combinations;
+- [`/lab/harmonica-design`](https://alexandr-panchenko.github.io/harmonica/lab/harmonica-design/) — three light material concepts, 10/12-hole geometry, slider animation, and interaction states.
+
+They are isolated static entry points and do not replace the production staff or virtual instrument. See [`docs/design-labs-report.md`](docs/design-labs-report.md) for the comparison, screenshot index, recommendations, and open owner decisions.
+
 ## Run and validate
 
 Requirements: [Bun](https://bun.sh/) 1.2.5 or later and a modern Chromium, Firefox, or Safari browser.
