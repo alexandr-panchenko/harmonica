@@ -37,10 +37,6 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      # The repository previously published main:/ directly. On the migration run,
-      # let that already-queued legacy deployment drain before publishing dist.
-      - name: Drain legacy branch deployment
-        run: sleep 60
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
