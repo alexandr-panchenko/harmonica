@@ -42,3 +42,7 @@ Screenshot sets:
 - Bun's compatibility runtime reports Node 22.6 while Vite 7 recommends 22.12+; Bun-driven builds and both Playwright suites complete successfully.
 
 The release candidate is not final product acceptance until the checklist in `docs/manual-test-checklist.md` is completed with a real harmonica.
+
+## Pages publication fallback
+
+After repeated GitHub-hosted runner failures before any job step (`Internal server error` / `Service Unavailable`), publication was moved from `actions/deploy-pages` to a locally verified static artifact on the `gh-pages` branch. The main workflow remains a build/test CI gate. Pages serves `gh-pages:/`, so a release does not depend on the unavailable deployment action.

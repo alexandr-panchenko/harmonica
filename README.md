@@ -46,4 +46,4 @@ PRODUCTION_URL=https://alexandr-panchenko.github.io/harmonica/ bun run test:prod
 
 See [the architecture](docs/architecture.md), [roadmap](docs/product-roadmap.md), [release report](docs/release-report.md), and [manual owner checklist](docs/manual-test-checklist.md).
 
-Deployment is the Actions-only static GitHub Pages workflow in `.github/workflows/pages.yml`. No account, backend, database, telemetry, or cloud audio processing is included.
+Deployment uses a locally verified static build published to the `gh-pages` branch; `.github/workflows/pages.yml` remains a build/test CI gate and no longer calls the unavailable Pages deployment action. No account, backend, database, telemetry, or cloud audio processing is included.
