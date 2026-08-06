@@ -4,14 +4,15 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
+    "dev": "bunx --bun vite",
+    "build": "bunx --bun vite build",
+    "preview": "bunx --bun vite preview",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
-    "test:browser": "playwright test",
+    "test:browser": "playwright test --workers=6",
     "test:production": "playwright test --config=playwright.production.config.ts",
     "capture:labs": "bun run scripts/capture-design-labs.ts",
+    "capture:release": "bun run scripts/capture-release.ts",
     "benchmark:pitch": "bun run scripts/pitch-benchmark.ts"
   },
   "dependencies": {

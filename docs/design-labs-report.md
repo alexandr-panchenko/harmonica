@@ -1,98 +1,48 @@
-# M10 design laboratories · owner review report
+# M10–M12 design decision report
 
-Status: **laboratories complete; production migration requires owner approval**
+Status: **owner decisions approved; production release candidate implemented**
 
-Starting SHA: `518da7fc60f2f7f2ef140d035e4f21e942b48f2f`
+## Approved decisions
 
-Final SHA: use the commit containing this report (also recorded in the delivery message and deployed workflow).
+- abcjs 6.5.2 is the production engraver.
+- Timeline Staff is the initial guided/beginner default; Engraved Score is the conventional secondary mode.
+- Balanced density is the production Timeline preset (`minPadding: 13`, `minWidth: 33`, target staff width about 40 measured-layout px per beat). Spacious and Compact remain laboratory diagnostics only.
+- The light product-illustration body is the production instrument direction; no raster asset is required.
+- Microphone input uses Compact Guidance, while explicit touch input uses four direct-action zones per hole.
+- One action always specifies hole, breath, and slide. The physical slider remains independently animated.
 
-## Review URLs
+## Ribbon correction
 
-- Staff: <https://alexandr-panchenko.github.io/harmonica/lab/staff-design/>
-- Harmonica: <https://alexandr-panchenko.github.io/harmonica/lab/harmonica-design/>
+The approved lab no longer computes ribbon width from `durationBeats * 42` or vertical position from the selectable group bottom. Production `RenderAnchor` now distinguishes whole-event bounds, exact notehead bounds, temporal X, and system index. The adapter searches for the notehead inside each selectable note group and owns the only diagnostic fallback.
 
-Both routes are independent Vite HTML entry points, so direct GitHub Pages navigation works without an SPA fallback. Production `GameStage`, `VirtualHarmonica`, exercises, scoring, and audio flows were not replaced.
+`buildTimelineGeometry()` connects a notehead to the next measured temporal anchor with a 5 px end gap. A rest supplies the next temporal anchor but produces no ribbon. The last note extrapolates from a neighboring measured pixels-per-beat interval. Every ribbon center uses `notehead.centerY`. Tied written notes retain separate engraved segments while elapsed fill belongs to the merged sounding event.
 
-## Staff laboratory
+Layer order is explicit: translucent ribbon underlay, abcjs notation, then hidden/name/performance/trace overlays. Balanced spacing is about 15% tighter than the original Spacious prototype and retains clear accidentals, dots, flags, beams, ties, and rests.
 
-The mode switch compares the current handwritten production renderer, plain abcjs engraving, plain `timeBasedLayout`, Timeline Staff with gameplay overlays, and conventional Engraved Score with highlighting. The fixture selector includes:
+## Production instrument split
 
-- a long 4/4 G-major stress fixture with pickup, key signature, explicit sharp/flat/natural, all principal durations and rests, beams, tuplets, internal and cross-bar ties, barlines, and ledger notes from `C,` to `c'`;
-- a 6/8 compound-meter fixture with pickup, beamed groups, dotted values, rests, and cross-bar tie;
-- an extended built-in Greensleeves example.
+Compact Guidance presents one complete 10/12-hole body, hole numbers, target outline, detected halo, airflow, feedback, and out/in/neutral physical slider. It contains no four-quadrant buttons. Multiple microphone matches are combined by hole and only assert a common breath or slide state when one exists.
 
-### Findings
+Interactive Touch uses the same body and typed mappings, exposing 40 or 48 direct action buttons with pointer capture, keyboard hold, sampled playback, and slider animation. Phone layouts scroll horizontally and follow the recommended target unless it is already safe on screen or the user interacted during the previous three seconds.
 
-| Question | Result |
-| --- | --- |
-| Accidentals/key signature | abcjs is clearly superior and measure-aware; the custom baseline cannot express the complete rules. |
-| Durations/rests | Standard glyphs are correct and readable. Time-based spacing adds temporal information without replacing glyph values. |
-| Beams/ties/barlines | abcjs renders them correctly; the custom baseline has no equivalent complete engraving model. |
-| `timeBasedLayout` | Useful and duration-proportional inside each rendered line. It is not a complete scrolling game timeline by itself. |
-| Gameplay overlay | Source-range-bound anchors support ribbons, active fill, fixed judgment line, and pitch trace without leaking SVG queries outside the adapter. |
-| Mobile | Full-size notation in a horizontal viewport is preferable to shrinking. Conventional score remains readable with scrolling. |
+The phrase-level dynamic-programming planner selects a deterministic primary fingering while preserving valid alternatives. Its costs cover hole travel, slide/breath changes, duplicate-position churn, and continuity; an impossible pitch is explicit.
 
-The tested and pinned dependency is `abcjs@6.5.2`. `AbcAdapter` is the only code that reads parse/visual-object internals. It emits separate written events and sounding events; ties merge multiple written notes into one sound event. DOM association uses source ranges rather than assuming SVG node order.
+## Screenshot evidence
 
-### Staff recommendation
+Laboratory evidence is under `docs/screenshots/labs/` and includes Timeline mixed duration, tie, phone, ribbon close-up, Score desktop/mobile, 10/12 instrument geometry, ambiguous microphone mapping, and slider states. Full product evidence is under `docs/screenshots/release-candidate/` and includes menu, all five modes, Timeline/Score, hidden Ear, compact 10/12, mobile compact, mobile touch, and ribbon close-up.
 
-Proceed later with **Timeline Staff as the default guided-learning mode**, using abcjs for engraving and an application-owned continuously translated viewport for ribbons, judgment line, pitch trace, and result history. Keep **Engraved Score as a conventional reading option** with restrained active highlighting and system transitions.
+## Two-pass self-review
 
-Do not make raw `timeBasedLayout` the entire production timeline: it solves spacing, not continuous playhead motion, line-transition policy, or tie-spanning ribbon behavior. Those remain application responsibilities behind the adapter.
+Pass one found authored ABC body line breaks creating multiple Timeline systems, missing lead-in before the first judgment target, mobile compact layout overflow, and late legacy CSS restoring dark panels. Pass two flattened Timeline body line breaks without changing source offsets, added measured lead-in, made compact geometry truly responsive, raised setup controls above scrolling content, and applied final light-panel overrides.
 
-## Harmonica laboratory
+Confirmed after pass two:
 
-The lab compares brushed light steel, pearl/silver, and a simplified product-illustration hybrid. The same parameterized object renders 10 and 12 holes from existing typed profiles. Every physical hole contains four direct action buttons: blow/out, blow/in, draw/out, and draw/in. One click therefore still specifies the complete action.
+- ribbons continue from the notehead and nearly fill each measured event interval;
+- notation remains above the ribbon;
+- Balanced spacing is readable without the original excess;
+- airflow and slider states are visible without turning Compact into a table;
+- all 10/12 compact holes fit phone portrait;
+- Touch retains readable scrolling controls and automatic target focus;
+- main surfaces are light and high-contrast.
 
-State controls cover idle/labels off/labels on, guided target, user press, single microphone match, ambiguous microphone matches, correct, incorrect, slider released, pressed, and neutral. Mobile intentionally retains full-size holes in a horizontal viewport.
-
-### Harmonica recommendation
-
-Use the **parameterized product-illustration SVG/CSS hybrid** as the production direction. It provides deterministic 10/12 scaling, clean provenance, equal-size holes, separate slider motion, high-DPI rendering, and overlay control. A future owner-supplied photo may inform material texture, but should replace only the base material layer—not geometry or musical mapping.
-
-- Base art: parameterized vector/CSS body now; optional restrained raster texture only after a provenance-safe owner reference is approved.
-- Hit zones: normalized profile-derived geometry; 40 actions for 10 holes and 48 for 12 holes.
-- Slider: separate rod/knob object with released, pressed, and hatched neutral positions.
-- Ambiguous mic: highlight every valid zone; animate the slider only when all candidate actions agree.
-- Accessibility: every quadrant remains a real button with a complete accessible name and keyboard activation; state is not color-only.
-
-## Screenshot index
-
-| Screenshot | Review purpose |
-| --- | --- |
-| [`staff-timeline-game-desktop.png`](screenshots/labs/staff-timeline-game-desktop.png) | Timeline Staff, desktop, duration and pitch overlays |
-| [`staff-engraved-desktop.png`](screenshots/labs/staff-engraved-desktop.png) | Conventional 6/8 engraved score, beams/ties/rests |
-| [`staff-timeline-game-mobile.png`](screenshots/labs/staff-timeline-game-mobile.png) | Timeline Staff, phone portrait and horizontal viewport |
-| [`harmonica-12-guided-desktop.png`](screenshots/labs/harmonica-12-guided-desktop.png) | Recommended 12-hole concept and guided target |
-| [`harmonica-10-ambiguous-desktop.png`](screenshots/labs/harmonica-10-ambiguous-desktop.png) | 10-hole geometry and ambiguity-safe mic state |
-| [`harmonica-12-guided-mobile.png`](screenshots/labs/harmonica-12-guided-mobile.png) | Phone portrait, readable left-side holes |
-| [`harmonica-12-slider-mobile.png`](screenshots/labs/harmonica-12-slider-mobile.png) | Phone portrait scrolled to the separately animated slider |
-
-Run `bun run capture:labs` while the local server is running to regenerate this review set. It is screenshot evidence, not a pixel-perfect regression suite.
-
-## Owner decisions still required
-
-1. Approve Timeline Staff as the learning default and Engraved Score as the secondary reading mode.
-2. Choose exact Timeline Staff density, judgment-line position, ribbon weight, and line-transition behavior.
-3. Approve the product-illustration hybrid over the more photoreal steel/pearl treatments.
-4. Decide whether an owner photograph should be used only as material reference before production asset work.
-5. Choose how much quadrant guidance is visible by default versus revealed on focus/guidance.
-
-## Known limitations
-
-- The lab slider changes a deterministic playback position; it is not a production timing engine.
-- `timeBasedLayout` is line-oriented. Continuous motion and system transitions need a production viewport controller.
-- Overlay anchors intentionally depend on abcjs visual details, but that dependency is isolated and tested at one boundary.
-- The harmonica body is reviewed vector concept art, not a final photoreal raster asset.
-- The lab demonstrates airflow/state treatments but does not play audio or infer breath/slide from microphone pitch.
-- Visual screenshots cover Chromium reference viewports; Safari/Firefox visual acceptance remains part of a later production migration.
-
-## Verification
-
-- `bun run typecheck`
-- `bun test`
-- `bun run build`
-- `bun run test:browser`
-- reproducible desktop/mobile screenshot capture via `bun run capture:labs`
-
-No production rewrite is included in this milestone.
+Final acceptance still requires the owner’s real-harmonica test; this report does not declare the product accepted.

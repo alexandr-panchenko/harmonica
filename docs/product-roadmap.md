@@ -1,7 +1,7 @@
 # Harmonica Trainer product roadmap
 
-Status: **canonical planning document**  
-Last updated: **2026-08-04**
+Status: **canonical planning document · M10 approved, M11/M12 release candidate implemented**
+Last updated: **2026-08-06**
 
 This document replaces the sequence of local sprint prompts and handoff notes that were used to build the current prototype. Those historical prompts are useful as development history, but they are no longer the source of truth for future work. The current implementation is described in `README.md`, `docs/architecture.md`, and the release reports. Future product and design work should be planned here.
 
@@ -1008,6 +1008,8 @@ Streak mechanics should avoid punishing the player or encouraging meaningless ac
 
 ### M10 — Staff and harmonica design laboratories
 
+Status: **Approved by owner.** Timeline/Score, light product illustration, and compact/interactive split are fixed decisions.
+
 - `/lab/staff-design`;
 - `/lab/harmonica-design`;
 - light-first visual experiments;
@@ -1018,6 +1020,8 @@ Streak mechanics should avoid punishing the player or encouraging meaningless ac
 
 ### M11 — Production notation migration
 
+Status: **Release candidate implemented.** Production AbcAdapter, measured Timeline geometry, Engraved Score, generated subset serializer, hidden masking, and all-mode integration are complete pending owner real-instrument acceptance.
+
 - AbcAdapter;
 - written/sound event split;
 - Timeline Staff;
@@ -1026,6 +1030,8 @@ Streak mechanics should avoid punishing the player or encouraging meaningless ac
 - parity and migration tests.
 
 ### M12 — Production visual harmonica
+
+Status: **Release candidate implemented.** Shared body, Compact Guidance, Interactive Touch, deterministic fingering planner, ambiguity-safe microphone state, and mobile auto-follow are complete pending owner acceptance.
 
 - approved base art;
 - deterministic interaction geometry;
@@ -1115,16 +1121,19 @@ These features are not rejected. They are sequenced behind the core instrument e
 - Move the next design direction toward light, clean, and high-contrast presentation.
 - Finish the static/local product before Cloudflare persistence work.
 - Treat improvisation as a major future mode rather than a minor scale-reference screen.
+- Use Balanced Timeline density (`minPadding: 13`, `minWidth: 33`) as the production default.
+- Use Compact Guidance for recommended microphone practice and Interactive Touch only for explicit touch input.
+- Use a parameterized vector/CSS product illustration without a raster base for this release candidate.
+
+### M10 experiments resolved
+
+- Timeline uses Balanced density, a 38% judgment line, notehead-aligned 10 px ribbons, and sound-event progress over written tie segments.
+- Engraved Score uses conventional wrapping and active-system follow.
+- The parameterized product-illustration body scales both typed profiles.
+- Compact hides quadrants; Interactive Touch reveals four direct zones only on explicit touch selection.
 
 ### Experiments still required
 
-- exact Timeline Staff density and playhead location;
-- exact ribbon shape and progress behavior over ties;
-- best conventional-score scrolling behavior;
-- best base-art material and projection;
-- quadrant hit zones versus another equally direct hole-integrated overlay;
-- parameterized versus separate 10-hole/12-hole base assets;
-- how much instructional labeling is visible by default;
 - whether the light redesign should retain an optional dark theme.
 
 ### Deferred decisions

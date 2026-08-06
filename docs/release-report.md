@@ -1,94 +1,44 @@
-# Release report — two-row instrument and visible learning aids
+# M11/M12 production migration release candidate
 
-Status: released to `main`, deployed to GitHub Pages, and verified in production.
+Date: 2026-08-06
+Starting SHA: `c1f25e3a1e4197f24a8276c3339820809b28b1b0`
+Final SHA and workflow run: recorded after the release commit/deployment.
 
-- Starting `main`: `13eca3aad297817033903ed63424ee47252fb98b` (matched fetched `origin/main` on 2026-08-01).
-- Implementation commit: `925bc7a9f44ce3ce26428ed2d7c341c687f1550e`.
-- Production URL: <https://alexandr-panchenko.github.io/harmonica/>.
-- Scope: finish the existing instrument profiles, learning aids, discoverability, typography, and contrast without adding modes.
+## Delivered
 
-## Baseline reproduction
+- One production abcjs 6.5.2 adapter and renderer for Find, Score, Ear, Rhythm, and Learn.
+- Persisted Timeline/Score switch; Timeline is default.
+- Exact notehead/temporal/system anchors and measured ribbon geometry with a 5 px next-anchor gap.
+- Balanced Timeline density: `minPadding 13`, `minWidth 33`, about 40 layout px/beat.
+- Tie-merged sound events, generated-exercise ABC serializer, and built-in/import ABC source handling.
+- Complete hidden-event masking plus neutral Ear marker and application-owned note names.
+- Shared product-illustration harmonica body with Compact Guidance and Interactive Touch views.
+- Deterministic phrase-level fingering planner with alternatives and explicit unplayable results.
+- Ambiguity-safe detected mappings, common-only breath/slider claims, and out/in/neutral physical slider.
+- Phone compact fit plus Interactive safe-viewport follow and three-second manual-interaction suspension.
+- Light-first production surfaces and updated canonical documentation.
+- Removed legacy `GameStage`, `MusicGlyphs`, and `VirtualHarmonica` render paths.
 
-The fetched production build was rendered at browser zoom 100% in Chromium at 1440 px desktop and 390 px phone portrait. It showed four independent action lanes (`BLOW OUT`, `DRAW OUT`, `BLOW IN`, `DRAW IN`). Instrument selection, staff labels, harmonica labels, and note naming were reachable only through an unlabeled visual gear. Useful labels existed at 7–10 px with low-contrast blue/green grays. The 10-hole profile was a truncated 12-hole pattern: hole 9 blow-out was C6 and hole 10 blow-out was E6 instead of E6 and G6.
+## Evidence
 
-Baseline captures:
+Focused scripts added:
 
-- `baseline-menu-desktop.png`
-- `baseline-find-desktop.png`
-- `baseline-score-desktop.png`
-- `baseline-ear-desktop.png`
-- `baseline-harmonica-12-desktop.png`
-- `baseline-harmonica-10-desktop.png`
-- `baseline-menu-mobile.png`
-- `baseline-find-mobile.png`
+- `bun run capture:release`
+- `tests/unit/timeline-geometry.test.ts`
+- `tests/unit/fingering-planner.test.ts`
+- `tests/unit/generated-abc.test.ts`
 
-## Implementation
+Screenshot sets:
 
-`VirtualHarmonica` now renders exactly two `.breath-row` elements. Each numbered hole is one `.hole-actions` group containing two direct buttons. Compact slider pictograms show the knob in its released or pressed position without visible `OUT` / `IN` words; button accessible names retain `slide out` / `slide in`. Hole numbers appear once per column on stable high-contrast plates. The shared cover, mouthpiece, rail, and right-hand slide knob read as one continuous instrument. Twelve holes remain full-size on phones and use horizontal scrolling; each half is at least 40 × 68 CSS px in portrait.
+- `docs/screenshots/labs/`
+- `docs/screenshots/release-candidate/`
 
-The main menu now contains only the five training choices. Player setup is visible without opening Settings directly below the harmonica on every game screen. It exposes:
+## Known limitations
 
-- `INSTRUMENT`: `10 holes` / `12 holes`;
-- `Staff note names`: Off / On;
-- `Harmonica note names`: Off / On;
-- `Note naming`: Letters C D E / Solfège Do Re Mi.
+- abcjs internal DOM binding is intentionally isolated but still version-sensitive; the adapter emits a notehead fallback diagnostic.
+- Microphone pitch cannot infer physical technique and therefore never selects a unique ambiguous hole/breath/slide.
+- The fingering recommendation is deterministic guidance, not a claim of the only correct technique.
+- Chromium provides the screenshot reference; Safari/Firefox and real-device latency remain owner/manual acceptance items.
+- Bun's compatibility runtime reports Node 22.6 while Vite 7 recommends 22.12+; Bun-driven builds and both Playwright suites complete successfully.
 
-All four staff/harmonica label combinations work independently, naming updates immediately, and all four choices persist in `localStorage`. The advanced gear now contains only intonation and diagnostic links.
-
-The profile formula was removed as the shared source of truth. `STANDARD_C10_ACTIONS` and `STANDARD_C12_ACTIONS` are separate typed `HarmonicaHoleLayout[]` tables expanded into physical actions. The critical 10-hole slide-out mappings are hole 9 `blow: 88, draw: 86` and hole 10 `blow: 91, draw: 89`; hole 10 slide-in blow is 92. Its full action range is MIDI 60–92, while the 12-hole range remains MIDI 60–97. Find pools, guided targets, direct input, and microphone matches all consume the currently selected profile.
-
-Pressed, microphone-detected, guided, correct, and incorrect actions use different combinations of solid/dashed/double outlines, glow, icons, and error hatching rather than color alone.
-
-## Typography and contrast audit
-
-The conflicting historical two-row and four-lane CSS blocks were removed and replaced by one formatted instrument section. No user-significant text in `src/styles.css` remains at 7–9 px. Computed browser checks enforce: hole numbers 20 px, breath names 14 px, slider pictograms 28 px wide, harmonica note names 13 px, setup labels and buttons 14 px. Mobile keeps those sizes.
-
-Representative WCAG contrast calculations:
-
-- hole number: 17.24:1;
-- released slider icon against its action background: greater than 7:1;
-- pressed slider icon against its action background: greater than 7:1;
-- BLOW/DRAW: 17.24:1;
-- learning-aid labels: 15.49:1;
-- inactive control text: 12.96:1;
-- instrument help text: 10.06:1.
-
-Two full screenshot iterations were reviewed at original size. Pass 1 identified an overly wide mobile slide legend and a stale simulated-microphone capture. Pass 2 removed that phone legend and showed all MIDI-72 matching positions with outline, glow, and `◉` markers. The follow-up capture set verifies the later menu simplification, below-instrument setup placement, and icon-only slider positions.
-
-Final acceptance captures use the `pass2-*` prefix:
-
-- `pass2-menu-desktop.png`
-- `pass2-12-labels-off-desktop.png`
-- `pass2-12-labels-on-desktop.png`
-- `pass2-10-labels-on-desktop.png`
-- `pass2-microphone-matching-desktop.png`
-- `pass2-learning-aids-desktop.png`
-- `pass2-find-mobile.png`
-
-The matching screenshot uses the same rendered action states with a scripted stable MIDI 72 so all duplicate physical positions can be inspected deterministically without depending on room audio.
-
-Follow-up placement/icon captures use the `followup-*` prefix:
-
-- `followup-menu-desktop.png`
-- `followup-12-labels-off-desktop.png`
-- `followup-12-labels-on-desktop.png`
-- `followup-10-labels-on-desktop.png`
-- `followup-microphone-matching-desktop.png`
-- `followup-learning-aids-desktop.png`
-- `followup-find-mobile.png`
-
-## Verification
-
-Local release gate on 2026-08-01:
-
-- `bun install --frozen-lockfile`: 92 installs checked, no lockfile changes;
-- `bun run typecheck`: passed;
-- `bun test`: 33 passed, 245 assertions;
-- `bun run benchmark:pitch`: MPM identity remained 100% for all four synthetic tone fixtures; colored noise, breath noise, and clicks produced zero stable frames/segments;
-- `bun run build`: passed, 359.33 kB JS (114.79 kB gzip) and 26.94 kB CSS (7.43 kB gzip);
-- `bun run test:browser`: 37 passed across desktop, Pixel 7 portrait, and Pixel 7 landscape; two viewport-specific skips;
-- `bun run test:production`: 12 passed against the production preview; one phone-only skip in the desktop production project.
-
-GitHub Actions run `30684823921` completed successfully for the implementation commit: both the build and Pages deployment jobs passed. The same production Playwright suite was then run against <https://alexandr-panchenko.github.io/harmonica/>: 12 applicable tests passed with one intentional phone-only skip in the desktop project. Full-size production desktop and 390 px phone screenshots were visually checked and matched the accepted pass 2 for two-row structure, labels, controls, horizontal scrolling, typography, and contrast.
-
-Known limitations remain unchanged: main-thread `AnalyserNode` capture; a monodic ABC subset without tuplets/key-signature carry/ties; pitch-shifted samples between sparse high source zones; no continuous virtual bend gesture; browser-native WebM fixture export; aggregate flow review; and the need for the existing short owner/device check for real-room microphone behavior.
+The release candidate is not final product acceptance until the checklist in `docs/manual-test-checklist.md` is completed with a real harmonica.

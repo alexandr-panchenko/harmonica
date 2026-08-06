@@ -1,7 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { GameStage, type TimelinePerformance } from "../game/GameStage";
-import { VirtualHarmonica } from "../harmonica-ui/VirtualHarmonica";
+import { MusicStage, type StaffDisplayMode } from "../notation/abc/AbcRenderer";
+import { adaptAbc } from "../notation/abc/AbcAdapter";
+import { generatedExerciseToAbc } from "../notation/abc/generatedExerciseToAbc";
+import { HarmonicaStage } from "../harmonica-ui/HarmonicaStage";
+import { planFingerings } from "../harmonica-ui/fingeringPlanner";
 import { Tuner } from "../components/Tuner";
 import { MicrophoneInput, type MicrophoneDiagnostics, type MicrophoneObservation } from "../audio/MicrophoneInput";
 import { PlaybackEngine } from "../audio/PlaybackEngine";
@@ -18,12 +21,15 @@ type Mode = "find" | "score" | "ear" | "rhythm" | "guided";
 type Screen = "menu" | "songs" | "game";
 type Input = "virtual" | "microphone";
 type Practice = "step" | "flow";
+interface TimelinePerformance { id:string; midi:number; startedAt:number; durationMs:number; outcome:"correct"|"incorrect"|"performed" }
 const player = new PlaybackEngine();
 const PREFERENCES = {
   profile: "harmonica-profile",
   staffLabels: "harmonica-staff-note-names",
   harmonicaLabels: "harmonica-instrument-note-names",
   namingSystem: "harmonica-note-naming",
+  staffMode: "harmonica-staff-display-mode",
+  input: "harmonica-input-source",
 } as const;
 const EAR_TARGETS = [60, 64, 62, 67];
 const RHYTHM_MELODY: Melody = {
@@ -35,7 +41,8 @@ const RHYTHM_MELODY: Melody = {
 
 export function App() {
   const [screen, setScreen] = useState<Screen>("menu"), [pendingSongMode,setPendingSongMode]=useState<"score"|"guided">("score");
-  const [mode, setMode] = useState<Mode>("find"), [input, setInput] = useState<Input>("virtual"), [practice, setPractice] = useState<Practice>("step");
+  const [mode, setMode] = useState<Mode>("find"), [input, setInput] = useState<Input>(()=>localStorage.getItem(PREFERENCES.input)==="virtual"?"virtual":"microphone"), [practice, setPractice] = useState<Practice>("step");
+  const [micEnabled,setMicEnabled]=useState(false),[staffMode,setStaffMode]=useState<StaffDisplayMode>(()=>localStorage.getItem(PREFERENCES.staffMode)==="score"?"score":"timeline");
   const [active, setActive] = useState(0), [status, setStatus] = useState<"idle"|"hit"|"miss">("idle"), [message, setMessage] = useState("Read the staff, then play");
   const [frame, setFrame] = useState<TrackerFrame|null>(null), [observation,setObservation]=useState<MicrophoneObservation>(), [trace, setTrace] = useState<PitchTracePoint[]>([]), [renderedPerformance,setPerformance]=useState<TimelinePerformance[]>([]);
   const [micError, setMicError] = useState(""), [diagnostics, setDiagnostics] = useState<MicrophoneDiagnostics>(), [micDevices,setMicDevices]=useState<MediaDeviceInfo[]>([]), [deviceId,setDeviceId]=useState("");
@@ -58,6 +65,8 @@ export function App() {
   useEffect(()=>localStorage.setItem(PREFERENCES.staffLabels,String(staffLabels)),[staffLabels]);
   useEffect(()=>localStorage.setItem(PREFERENCES.harmonicaLabels,String(harmonicaLabels)),[harmonicaLabels]);
   useEffect(()=>localStorage.setItem(PREFERENCES.namingSystem,namingSystem),[namingSystem]);
+  useEffect(()=>localStorage.setItem(PREFERENCES.staffMode,staffMode),[staffMode]);
+  useEffect(()=>localStorage.setItem(PREFERENCES.input,input),[input]);
   useEffect(()=>setActionFeedback(undefined),[profile.id]);
   const findEvents = useMemo<MelodyEvent[]>(()=>{
     const first=Math.max(0,active-4);
@@ -75,7 +84,7 @@ export function App() {
   useEffect(() => { const warm=()=>void player.preload(); addEventListener("pointerdown",warm,{once:true}); return()=>removeEventListener("pointerdown",warm); },[]);
   useEffect(() => () => { microphone.current.stop(); player.stop(); if (flowTimer.current) cancelAnimationFrame(flowTimer.current); }, []);
   useEffect(() => {
-    if (input !== "microphone") { microphone.current.stop(); setFrame(null); setObservation(undefined); return; }
+    if (input !== "microphone"||!micEnabled) { microphone.current.stop(); setFrame(null); setObservation(undefined); return; }
     segmenter.current.reset(); setMicError("");
     void microphone.current.start((next, nextObservation) => {
       setObservation(nextObservation); const now=performance.now();
@@ -85,7 +94,7 @@ export function App() {
       const completed=segmenter.current.update(next,now,"microphone"); if(completed)submitRef.current(completed);
     }, deviceId || undefined).then((value)=>{setDiagnostics(value);void MicrophoneInput.devices().then(setMicDevices)}).catch((error: unknown) => { setMicError(error instanceof Error ? error.message : "Microphone unavailable"); setInput("virtual"); });
     return()=>microphone.current.stop();
-  }, [input, deviceId]);
+  }, [input, micEnabled, deviceId]);
 
   const flash = (next: "hit"|"miss", text: string) => { setStatus(next); setMessage(text); window.setTimeout(() => setStatus("idle"), 520); };
   const addTimelinePerformance=(segment:InputNoteSegment,outcome:TimelinePerformance["outcome"])=>setPerformance((value)=>[...value.filter((item)=>performance.now()-item.startedAt<8_000),{id:segment.id,midi:segment.classifiedMidi,startedAt:segment.startedAt,durationMs:segment.durationMs,outcome}]);
@@ -127,7 +136,16 @@ export function App() {
   const exitMode = () => { player.stop(); microphone.current.stop(); if (flowTimer.current) cancelAnimationFrame(flowTimer.current); setInput("virtual"); setScreen("menu"); };
   const stageBeat=practice==="flow"&&mode!=="find"?flow:sourceEvents[activeEventIndex]?.startBeat??0;
   const detectedMidis=frame?.state==="stable"&&frame.classifiedMidi!==undefined?[frame.classifiedMidi]:[];
-  const guideMidis=mode==="guided"&&target?.midi!==undefined?[target.midi]:[];
+  const notationSource=useMemo(()=>mode==="score"||mode==="guided"?customAbc:generatedExerciseToAbc(sourceEvents,{title:mode==="ear"?"Ear phrase":mode==="rhythm"?"Rhythm training":"Find a note",meter:exerciseMelody.meter,tempoQpm:exerciseMelody.tempoQpm}),[mode,customAbc,sourceEvents,exerciseMelody.meter.numerator,exerciseMelody.meter.denominator,exerciseMelody.tempoQpm]);
+  const notationDocument=useMemo(()=>adaptAbc(notationSource),[notationSource]);
+  const noteOrdinal=Math.max(0,sourceEvents.slice(0,activeEventIndex+1).filter(event=>event.kind==="note").length-1);
+  const activeWritten=notationDocument.writtenEvents.filter(event=>event.kind==="note")[noteOrdinal]??notationDocument.writtenEvents.find(event=>event.kind==="note");
+  const hiddenWrittenIds=useMemo(()=>new Set(mode==="ear"&&!earRevealed?notationDocument.writtenEvents.filter(event=>event.kind==="note").map(event=>event.id):[]),[mode,earRevealed,notationDocument]);
+  const plans=useMemo(()=>planFingerings(notationDocument.soundingEvents,profile),[notationDocument,profile]);
+  const activeSound=notationDocument.soundingEvents.find(sound=>sound.writtenEventIds.includes(activeWritten?.id??""));
+  const planned=plans.find(plan=>plan.soundEventId===activeSound?.id)?.recommended;
+  const guideAction=(mode==="guided"||mode==="rhythm"||(mode==="score"&&practice==="step")||(mode==="ear"&&earRevealed))?planned:undefined;
+  const detectedActions=detectedMidis.flatMap(midi=>actionsForMidi(profile,midi));
   const playerSetup=<PlayerSetup profileId={profile.id} setProfileId={setProfileId} staffLabels={staffLabels} setStaffLabels={setStaffLabels} harmonicaLabels={harmonicaLabels} setHarmonicaLabels={setHarmonicaLabels} namingSystem={namingSystem} setNamingSystem={setNamingSystem}/>;
   const settings=<SettingsDrawer strict={strict} setStrict={setStrict} diagnostics={diagnostics} onClose={()=>setShowSettings(false)}/>;
 
@@ -138,12 +156,13 @@ export function App() {
   const copy=modeCopy[mode];
   return <div className={`app-shell game-shell mode-${mode}`}><header className="game-header"><button className="menu-exit" onClick={exitMode}><span>←</span> Menu</button><div className="game-brand"><span className="brand-mark">H</span><span><b>HARMONICA</b><small>TRAINER</small></span></div><div className="session-stats"><span><b>{session.hits}</b><small>HITS</small></span><span><b>{session.attempts ? Math.round(session.hits/session.attempts*100):100}%</b><small>ACCURACY</small></span></div><button className="icon-button" aria-label="Settings" onClick={()=>setShowSettings(!showSettings)}>⚙</button></header>
     <main className="play-scene"><div className="mode-strip"><div><span className="eyebrow">{copy[0]}</span><h1>{copy[1]}</h1><p>{copy[2]}</p></div><span className={`feedback-chip ${status}`}>{status==="hit"?"✓":status==="miss"?"↕":"◇"} {message}</span></div>
-      <div className="toolbar"><div className="segmented" aria-label="Input source"><button className={input==="virtual"?"active":""} onClick={()=>setInput("virtual")}>Touch</button><button className={input==="microphone"?"active":""} onClick={()=>setInput("microphone")}>Microphone + touch</button></div>{mode!=="find"&&<div className="segmented" aria-label="Practice style"><button className={practice==="step"?"active":""} onClick={()=>setPractice("step")}>Step</button><button className={practice==="flow"?"active":""} disabled={mode==="ear"&&!earRevealed} onClick={()=>setPractice("flow")}>In time</button></div>}{mode==="ear"&&<div className="segmented" aria-label="Ear mode"><button className={!earRelative?"active":""} onClick={()=>{setEarRelative(false);setEarPlayed([]);setActive(0);setEarRevealed(false)}}>Absolute</button><button className={earRelative?"active":""} onClick={()=>{setEarRelative(true);setEarPlayed([]);setActive(0);setEarRevealed(false)}}>Relative</button></div>}<button className="listen" onClick={listen}><span>▶</span> Listen</button>{practice==="flow"&&mode!=="find"&&<button className="primary" onClick={startFlow}>Count in + perform</button>}</div>
+      <div className="toolbar"><div className="segmented" aria-label="Input source"><button className={input==="microphone"?"active":""} onClick={()=>setInput("microphone")}>Microphone · recommended</button><button className={input==="virtual"?"active":""} onClick={()=>setInput("virtual")}>Touch · alternative</button></div>{mode!=="find"&&<div className="segmented" aria-label="Practice style"><button className={practice==="step"?"active":""} onClick={()=>setPractice("step")}>Step</button><button className={practice==="flow"?"active":""} disabled={mode==="ear"&&!earRevealed} onClick={()=>setPractice("flow")}>In time</button></div>}{mode==="ear"&&<div className="segmented" aria-label="Ear mode"><button className={!earRelative?"active":""} onClick={()=>{setEarRelative(false);setEarPlayed([]);setActive(0);setEarRevealed(false)}}>Absolute</button><button className={earRelative?"active":""} onClick={()=>{setEarRelative(true);setEarPlayed([]);setActive(0);setEarRevealed(false)}}>Relative</button></div>}<button className="listen" onClick={listen}><span>▶</span> Listen</button>{practice==="flow"&&mode!=="find"&&<button className="primary" onClick={startFlow}>Count in + perform</button>}</div>
       {mode==="find"&&<div className="find-setup"><label>Range<select aria-label="Find note range" value={findRange} onChange={(event)=>setFindRange(event.target.value as FindRange)}><option value="beginner">Beginner · C4–C5</option><option value="medium">Medium · C4–C6</option><option value="full">Full {profile.holeCount}-hole range</option></select></label><label>Notes<select aria-label="Accidentals" value={accidentals} onChange={(event)=>setAccidentals(event.target.value as AccidentalMode)}><option value="naturals">Naturals only</option><option value="accidentals">Mix in accidentals</option><option value="chromatic">Full chromatic</option></select></label><span>{pool.length} possible pitches · anti-repeat shuffle</span></div>}
       {(mode==="score"||mode==="guided")&&<div className="score-source"><button className="song-change" onClick={()=>{setPendingSongMode(mode);setScreen("songs")}}>♫ {melody.title} <span>Change song →</span></button><details><summary>Import ABC</summary><textarea value={customAbc} onChange={(event)=>setCustomAbc(event.target.value)}/><button onClick={()=>{try{setMelody(parseAbc(customAbc));setActive(0)}catch(error){setMessage(error instanceof Error?error.message:"Invalid ABC")}}}>Load monody</button></details><label>Tempo <input type="range" min="50" max="160" value={melody.tempoQpm} onChange={(event)=>setMelody((value)=>({...value,tempoQpm:Number(event.target.value)}))}/>{melody.tempoQpm} BPM</label></div>}
-      <GameStage events={sourceEvents} activeIndex={activeEventIndex} hidden={mode==="ear"&&!earRevealed} currentBeat={stageBeat} trace={trace} performance={renderedPerformance} nowMs={input==="microphone"||practice==="flow"?performance.now():performanceNow(trace,renderedPerformance)} status={status} title={mode==="score"||mode==="guided"?melody.title:mode==="ear"?(earRevealed?"Discovered phrase":"Hidden phrase"):mode==="rhythm"?"Read the rhythm · pitch stays on C":"Read the target · answer hidden"} showNoteNames={staffLabels} namingSystem={namingSystem} pixelsPerBeat={mode==="find"?48:undefined}/>
-      {input === "microphone" && <section className="input-deck compact-mic">{micDevices.length > 1 && <label className="device-select">Input device <select value={deviceId} onChange={(event) => setDeviceId(event.target.value)}><option value="">System default</option>{micDevices.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label>}<Tuner frame={frame} observation={observation} message={micError} expectedOffset={expectedOffset(frame?.classifiedMidi)}/><div className="mic-actions"><button onClick={()=>microphone.current.recalibrate()}>Recalibrate</button><span>Mic pitch lights every matching position below</span></div></section>}
-      <VirtualHarmonica profile={profile} onStart={onVirtualStart} onEnd={onVirtualEnd} showLabels={harmonicaLabels} namingSystem={namingSystem} detectedMidis={detectedMidis} guideMidis={guideMidis} feedback={actionFeedback}/>
+      <div className="staff-mode-switch segmented" role="group" aria-label="Staff display"><button className={staffMode==="timeline"?"active":""} aria-pressed={staffMode==="timeline"} onClick={()=>setStaffMode("timeline")}>Timeline</button><button className={staffMode==="score"?"active":""} aria-pressed={staffMode==="score"} onClick={()=>setStaffMode("score")}>Score</button></div>
+      <MusicStage document={notationDocument} mode={staffMode} activeBeat={stageBeat} activeWrittenEventId={activeWritten?.id} hiddenWrittenEventIds={hiddenWrittenIds} pitchTrace={trace} feedback={status} title={mode==="score"||mode==="guided"?melody.title:mode==="ear"?(earRevealed?"Discovered phrase":"Hidden phrase"):mode==="rhythm"?"Read the rhythm · pitch stays on C":"Read the target · answer hidden"} showNoteNames={staffLabels} namingSystem={namingSystem} nowMs={input==="microphone"||practice==="flow"?performance.now():performanceNow(trace,renderedPerformance)}/>
+      {input === "microphone" && <section className="input-deck compact-mic">{!micEnabled&&<button className="primary enable-microphone" onClick={()=>setMicEnabled(true)}>Enable microphone</button>}{micEnabled&&micDevices.length > 1 && <label className="device-select">Input device <select value={deviceId} onChange={(event) => setDeviceId(event.target.value)}><option value="">System default</option>{micDevices.map((device, index) => <option key={device.deviceId} value={device.deviceId}>{device.label || `Microphone ${index + 1}`}</option>)}</select></label>}{micEnabled&&<Tuner frame={frame} observation={observation} message={micError} expectedOffset={expectedOffset(frame?.classifiedMidi)}/>}<div className="mic-actions">{micEnabled&&<button onClick={()=>microphone.current.recalibrate()}>Recalibrate</button>}<span>Pitch highlights every possible position; it never guesses hole, breath, or slide.</span></div></section>}
+      <HarmonicaStage view={input==="microphone"?"compact":"interactive"} profile={profile} target={guideAction} detected={detectedActions} onStart={onVirtualStart} onEnd={onVirtualEnd} showLabels={harmonicaLabels} namingSystem={namingSystem} feedback={actionFeedback}/>
       {playerSetup}
       {mode==="ear"&&<div className="ear-tools"><button onClick={()=>setMessage(earPlayed.length?`Next interval: ${EAR_TARGETS[earPlayed.length]! - EAR_TARGETS[Math.max(0,earPlayed.length-1)]! >= 0?"up":"down"}`:"Replay the reference")}>Hint</button><button onClick={()=>{setEarRevealed(true);setEarPlayed(earRelative&&earPlayed.length?relativeTargets(EAR_TARGETS,earPlayed[0]!):EAR_TARGETS);setMessage("Revealed · exercise marked assisted")}}>Reveal</button><span>{earPlayed.length}/{EAR_TARGETS.length} pitches found</span></div>}
       {!!flowResults.length&&<Review rows={flowResults} rhythm={mode==="rhythm"}/>} {showSettings&&settings}
