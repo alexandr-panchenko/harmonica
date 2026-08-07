@@ -1,48 +1,114 @@
-# M10–M12 design decision report
+# Staff and harmonica design decision report
 
-Status: **owner decisions approved; production release candidate implemented**
+Status: **laboratory direction approved; first production migration rejected; direct production rebuild is active**
 
-## Approved decisions
+The design laboratories established the correct direction, but they are no longer the product deliverable. The owner approved the underlying ideas and then reviewed the first production migration. That migration was not accepted.
 
-- abcjs 6.5.2 is the production engraver.
-- Timeline Staff is the initial guided/beginner default; Engraved Score is the conventional secondary mode.
-- Balanced density is the production Timeline preset (`minPadding: 13`, `minWidth: 33`, target staff width about 40 measured-layout px per beat). Spacious and Compact remain laboratory diagnostics only.
-- The light product-illustration body is the production instrument direction; no raster asset is required.
-- Microphone input uses Compact Guidance, while explicit touch input uses four direct-action zones per hole.
-- One action always specifies hole, breath, and slide. The physical slider remains independently animated.
+The binding implementation specification is now:
 
-## Ribbon correction
+- [`docs/production-redesign-spec.md`](production-redesign-spec.md)
+- active execution task: [`CODEX_TASK.md`](../CODEX_TASK.md)
 
-The approved lab no longer computes ribbon width from `durationBeats * 42` or vertical position from the selectable group bottom. Production `RenderAnchor` now distinguishes whole-event bounds, exact notehead bounds, temporal X, and system index. The adapter searches for the notehead inside each selectable note group and owns the only diagnostic fallback.
+## What the laboratories proved
 
-`buildTimelineGeometry()` connects a notehead to the next measured temporal anchor with a 5 px end gap. A rest supplies the next temporal anchor but produces no ribbon. The last note extrapolates from a neighboring measured pixels-per-beat interval. Every ribbon center uses `notehead.centerY`. Tied written notes retain separate engraved segments while elapsed fill belongs to the merged sounding event.
+### Notation
 
-Layer order is explicit: translucent ribbon underlay, abcjs notation, then hidden/name/performance/trace overlays. Balanced spacing is about 15% tighter than the original Spacious prototype and retains clear accidentals, dots, flags, beams, ties, and rests.
+- `abcjs@6.5.2` can engrave notes, rests, accidentals, key signatures, beams, ties, dots, ledger lines, and barlines correctly.
+- `timeBasedLayout` can make horizontal notation spacing proportional to musical duration.
+- The duration-ribbon idea should be preserved because it gives beginners a direct visual representation of how long to hold a note.
+- Conventional engraved Score view remains useful as a secondary reading mode.
 
-## Production instrument split
+### Harmonica
 
-Compact Guidance presents one complete 10/12-hole body, hole numbers, target outline, detected halo, airflow, feedback, and out/in/neutral physical slider. It contains no four-quadrant buttons. Multiple microphone matches are combined by hole and only assert a common breath or slide state when one exists.
+- A parameterized light vector/CSS harmonica can represent both 10-hole and 12-hole instruments.
+- A separately animated physical slide is useful and understandable.
+- The microphone-first compact instrument and the four-action Touch instrument should share one body and profile data.
+- Pitch-only microphone detection must remain honest about multiple possible physical actions.
 
-Interactive Touch uses the same body and typed mappings, exposing 40 or 48 direct action buttons with pointer capture, keyboard hold, sampled playback, and slider animation. Phone layouts scroll horizontally and follow the recommended target unless it is already safe on screen or the user interacted during the previous three seconds.
+## Owner review of the laboratory prototypes
 
-The phrase-level dynamic-programming planner selects a deterministic primary fingering while preserving valid alternatives. Its costs cover hole travel, slide/breath changes, duplicate-position churn, and continuity; an impossible pitch is explicit.
+The staff laboratory was visually successful except for the ribbon overlay:
 
-## Screenshot evidence
+- ribbons were shorter than the actual horizontal temporal intervals between adjacent events;
+- ribbons were vertically positioned from the whole note group/stem/flag area rather than continuing directly from the notehead;
+- ribbons should be translucent horizontal bands, not circular or disconnected elements;
+- Timeline spacing could be slightly denser while remaining readable.
 
-Laboratory evidence is under `docs/screenshots/labs/` and includes Timeline mixed duration, tie, phone, ribbon close-up, Score desktop/mobile, 10/12 instrument geometry, ambiguous microphone mapping, and slider states. Full product evidence is under `docs/screenshots/release-candidate/` and includes menu, all five modes, Timeline/Score, hidden Ear, compact 10/12, mobile compact, mobile touch, and ribbon close-up.
+The harmonica laboratory established the correct grid, profile mapping, and slide animation. The vector body was still schematic, but it was already good enough to refine without requiring a raster image.
 
-## Two-pass self-review
+The owner then clarified the product hierarchy:
 
-Pass one found authored ABC body line breaks creating multiple Timeline systems, missing lead-in before the first judgment target, mobile compact layout overflow, and late legacy CSS restoring dark panels. Pass two flattened Timeline body line breaks without changing source offsets, added measured lead-in, made compact geometry truly responsive, raised setup controls above scrolling content, and applied final light-panel overrides.
+- real harmonica + microphone is the primary practice path;
+- the compact virtual harmonica is primarily animated tablature/guidance;
+- Touch input is useful but secondary;
+- compact guidance should fit phones without a large four-action grid;
+- expanded Touch controls may scroll and should automatically focus the relevant hole.
 
-Confirmed after pass two:
+## Rejected first production migration
 
-- ribbons continue from the notehead and nearly fill each measured event interval;
-- notation remains above the ribbon;
-- Balanced spacing is readable without the original excess;
-- airflow and slider states are visible without turning Compact into a table;
-- all 10/12 compact holes fit phone portrait;
-- Touch retains readable scrolling controls and automatic target focus;
-- main surfaces are light and high-contrast.
+The migration committed under `5a05c3b38d12ac63b0c3b84432393c87a135aba9` introduced production notation and harmonica modules, but the owner did not see an accepted result in the deployed application:
 
-Final acceptance still requires the owner’s real-harmonica test; this report does not declare the product accepted.
+- the harmonica appeared unchanged or insufficiently different from the previous production interface;
+- Timeline ribbon placement remained wrong;
+- repository documentation claimed visual success that the owner had not confirmed;
+- deployment moved to a manually published `gh-pages` branch, making it unclear which source build was live.
+
+Therefore none of the following statements should be treated as owner-verified facts until the active rebuild is completed:
+
+- that ribbons are correctly notehead-aligned;
+- that ribbons fill measured event intervals;
+- that the new compact harmonica is visibly deployed;
+- that production matches the final source commit;
+- that M11/M12 are accepted.
+
+## Approved final direction
+
+### Production staff
+
+- abcjs is the only production engraver;
+- Timeline Staff is the primary guided display;
+- ribbon Y equals the actual notehead center;
+- ribbon X extends through the measured interval to the next temporal event;
+- one shared coordinate root is used by notation and overlays;
+- ribbons are behind notation;
+- rests break duration bands;
+- ties merge sounding duration while preserving engraved written notes;
+- conventional Score may remain as a secondary option.
+
+### Production harmonica
+
+- one coherent light vector instrument body;
+- Compact Guidance is the default microphone view;
+- Interactive Touch is secondary and uses the same body;
+- visible physical slide states: released, pressed, and neutral/ambiguous;
+- target and detected states are visually distinct;
+- 10-hole and 12-hole mappings remain typed and explicit;
+- no false physical-action inference from pitch-only microphone input.
+
+### Product surface
+
+Separate public lab pages are no longer required. After reusable code and fixtures are promoted:
+
+- remove the standalone lab routes;
+- remove duplicated lab components;
+- keep only production code, neutral test fixtures, and production screenshots.
+
+## Deployment decision
+
+GitHub Pages currently uses `gh-pages:/` with a test-only workflow on `main`. The active rebuild must keep one authoritative release path and add generated build identity:
+
+- exact final source SHA;
+- build timestamp;
+- machine-readable `build-meta.json`;
+- visible source SHA in the UI;
+- live verification that deployed metadata matches final `main`.
+
+A local preview, a pushed `main`, or a claimed screenshot set is not deployment proof.
+
+## Acceptance surface
+
+Only the deployed main application is accepted:
+
+`https://alexandr-panchenko.github.io/harmonica/`
+
+Final owner acceptance still includes a manual real-harmonica check after automated and visual production verification.
