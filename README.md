@@ -2,16 +2,35 @@
 
 A static, local-first trainer for 10-hole and 12-hole chromatic harmonicas. It teaches note location, score reading, rhythmic performance, guided songs, and absolute or relative ear playing. Audio is analyzed locally in the browser and is never uploaded.
 
-## Production experience
+## Active implementation task
 
-All five modes use abcjs 6.5.2 through one production `AbcAdapter`. **Timeline** is the default guided view: measured temporal spacing, notehead-aligned duration ribbons, a fixed judgment line, pitch trace, and performance history. **Score** keeps conventional systems and active-event highlighting. The display choice is independent of note-name and naming-system settings and persists in `localStorage`.
+The design-lab direction was approved, but the first attempt to migrate it into production was **not accepted**. The next Codex run must update the main application directly, remove the standalone lab product surface, and prove the deployed build.
 
-The instrument has two views over the same typed 10/12-hole profiles and physical body:
+Start here:
 
-- **Microphone · recommended** uses Compact Guidance: one readable harmonica, target and detected states, honest ambiguity, airflow, and a physical slider. It never claims that pitch detection identified a unique hole, breath, or slide.
-- **Touch · alternative** exposes four direct actions per physical hole. One press chooses hole, blow/draw, and slide out/in; hold duration remains exercise input. Mobile uses horizontal scrolling and follows the primary phrase-level fingering after a short user-scroll suspension.
+- [`CODEX_TASK.md`](CODEX_TASK.md) — active autonomous execution contract;
+- [`docs/production-redesign-spec.md`](docs/production-redesign-spec.md) — binding staff, harmonica, testing, cleanup, and deployment specification;
+- [`docs/design-labs-report.md`](docs/design-labs-report.md) — approved ideas and owner feedback on the rejected migration;
+- [`docs/product-roadmap.md`](docs/product-roadmap.md) — longer-term roadmap and deferred work.
 
-The production UI is light-first. Notation and text stay dark and high-contrast; mint, cyan, violet, and amber are reserved for state, duration, trace, and feedback.
+The production result is evaluated only at:
+
+`https://alexandr-panchenko.github.io/harmonica/`
+
+Separate laboratory pages are not an acceptable deliverable for the active task.
+
+## Current product map
+
+- **Find a note:** randomized staff-to-instrument training with configurable range and chromatic content.
+- **Play the score:** step and timed score practice.
+- **Play by ear:** relative and absolute phrase discovery.
+- **Rhythm training:** onset, duration, release, and rest practice.
+- **Learn a song:** fully guided beginner performance.
+- **Microphone:** local pitch, cents, gating, and note segmentation.
+- **Touch:** direct virtual harmonica input.
+- **Profiles:** explicit 10-hole and 12-hole C chromatic mappings.
+
+The active rebuild preserves all of these while replacing the central production notation and virtual-instrument presentation.
 
 ## Run and validate
 
@@ -25,25 +44,19 @@ bun run benchmark:pitch
 bun run build
 bun run test:browser
 bun run test:production
-bun run capture:labs
 bun run capture:release
 ```
 
-After Pages deploys:
+The active task removes lab-only capture and routes after reusable code/fixtures are promoted.
+
+After publication, production verification must use the live build metadata and run:
 
 ```bash
 PRODUCTION_URL=https://alexandr-panchenko.github.io/harmonica/ bun run test:production
 ```
 
-## Product map
+## Deployment state
 
-- **Find a note:** assessment-first randomized targets; no fingering leak before success.
-- **Play the score:** Timeline or conventional Score, Step or In time, optional guidance and labels.
-- **Play by ear:** hidden SVG event groups and neutral rhythm markers until discovery/reveal.
-- **Rhythm training:** engraved rests and values with duration ribbons and timing/length scoring.
-- **Learn a song:** visible notation plus deterministic recommended fingering and alternatives.
-- **Design diagnostics:** `/lab/staff-design/` and `/lab/harmonica-design/` use production primitives.
+GitHub Pages currently serves the root of the `gh-pages` branch. `.github/workflows/pages.yml` is a test/build CI gate rather than the publisher. The active task must build from the final pushed `main` SHA, publish only `dist` to `gh-pages`, expose generated `build-meta.json`, and verify that the live source SHA matches the final source commit.
 
-See [the architecture](docs/architecture.md), [roadmap](docs/product-roadmap.md), [release report](docs/release-report.md), and [manual owner checklist](docs/manual-test-checklist.md).
-
-Deployment uses a locally verified static build published to the `gh-pages` branch; `.github/workflows/pages.yml` remains a build/test CI gate and no longer calls the unavailable Pages deployment action. No account, backend, database, telemetry, or cloud audio processing is included.
+No account, backend, database, telemetry, or cloud audio processing is included in this milestone.
