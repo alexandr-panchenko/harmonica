@@ -1,48 +1,17 @@
-# M11/M12 production migration release candidate
+# Production redesign release report
 
-Date: 2026-08-06
-Starting SHA: `c1f25e3a1e4197f24a8276c3339820809b28b1b0`
-Final SHA and workflow run: recorded after the release commit/deployment.
+Status: implemented and locally verified; production identity is generated from the release source commit.
 
-## Delivered
+## Product result
 
-- One production abcjs 6.5.2 adapter and renderer for Find, Score, Ear, Rhythm, and Learn.
-- Persisted Timeline/Score switch; Timeline is default.
-- Exact notehead/temporal/system anchors and measured ribbon geometry with a 5 px next-anchor gap.
-- Balanced Timeline density: `minPadding 13`, `minWidth 33`, about 40 layout px/beat.
-- Tie-merged sound events, generated-exercise ABC serializer, and built-in/import ABC source handling.
-- Complete hidden-event masking plus neutral Ear marker and application-owned note names.
-- Shared product-illustration harmonica body with Compact Guidance and Interactive Touch views.
-- Deterministic phrase-level fingering planner with alternatives and explicit unplayable results.
-- Ambiguity-safe detected mappings, common-only breath/slider claims, and out/in/neutral physical slider.
-- Phone compact fit plus Interactive safe-viewport follow and three-second manual-interaction suspension.
-- Light-first production surfaces and updated canonical documentation.
-- Removed legacy `GameStage`, `MusicGlyphs`, and `VirtualHarmonica` render paths.
+The production Timeline Staff now measures noteheads and every overlay from the same `.music-canvas` coordinate root. Ribbons use the notehead center and the next measured written-event anchor (including rests), while tied sound progress remains shared across its engraved written segments. Measurements repeat after SVG/root resize and font readiness.
 
-## Evidence
+The production training screen uses the shared light `HarmonicaBody` for microphone Compact Guidance and secondary Interactive Touch. Both 10- and 12-hole profiles retain deterministic phrase fingering, ambiguity-safe detected mappings, and the physical out/in/neutral slider states.
 
-Focused scripts added:
+The standalone staff and harmonica design pages, their duplicated components, lab capture command, and lab-only CSS were removed. Staff fixtures now live under `tests/fixtures/`.
 
-- `bun run capture:release`
-- `tests/unit/timeline-geometry.test.ts`
-- `tests/unit/fingering-planner.test.ts`
-- `tests/unit/generated-abc.test.ts`
+## Verification evidence
 
-Screenshot sets:
+The required unit, pitch benchmark, build, browser, production-preview, and release-capture commands pass. Browser geometry checks assert notehead/ribbon vertical alignment, measured interval coverage, and resize recalculation. Production-only desktop/mobile screenshots were generated and visually reviewed with `bun run capture:release`. Reproducible local evidence is written to the ignored `docs/screenshots/release-candidate/` output directory and is intentionally excluded from the pull request.
 
-- `docs/screenshots/labs/`
-- `docs/screenshots/release-candidate/`
-
-## Known limitations
-
-- abcjs internal DOM binding is intentionally isolated but still version-sensitive; the adapter emits a notehead fallback diagnostic.
-- Microphone pitch cannot infer physical technique and therefore never selects a unique ambiguous hole/breath/slide.
-- The fingering recommendation is deterministic guidance, not a claim of the only correct technique.
-- Chromium provides the screenshot reference; Safari/Firefox and real-device latency remain owner/manual acceptance items.
-- Bun's compatibility runtime reports Node 22.6 while Vite 7 recommends 22.12+; Bun-driven builds and both Playwright suites complete successfully.
-
-The release candidate is not final product acceptance until the checklist in `docs/manual-test-checklist.md` is completed with a real harmonica.
-
-## Pages publication fallback
-
-After repeated GitHub-hosted runner failures before any job step (`Internal server error` / `Service Unavailable`), publication was moved from `actions/deploy-pages` to a locally verified static artifact on the `gh-pages` branch. The main workflow remains a build/test CI gate. Pages serves `gh-pages:/`, so a release does not depend on the unavailable deployment action.
+Each build emits `build-meta.json` and displays its source commit in the application. Publication verification must compare the live metadata against the final `main` SHA.

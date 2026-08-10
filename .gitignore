@@ -17,3 +17,7 @@ scratch/
 /reference-*.png
 /reference-*.jpg
 /reference-*.jpeg
+
+# Generated visual-review output (reproducible with bun run capture:release).
+/docs/screenshots/release-candidate/
+/docs/screenshots/baseline/
