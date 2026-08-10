@@ -1,18 +1,20 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { resolve } from "node:path";
+import { execFileSync } from "node:child_process";
+import packageJson from "./package.json";
+
+const sourceCommit = process.env.SOURCE_COMMIT ?? execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+const builtAt = process.env.BUILD_TIME ?? new Date().toISOString();
+const buildMeta = { sourceCommit, builtAt, version: packageJson.version };
 
 export default defineConfig({
-  plugins: [react()],
   base: "/harmonica/",
+  define: { __BUILD_META__: JSON.stringify(buildMeta) },
   build: {
     sourcemap: true,
-    rollupOptions: {
-      input: {
-        main: resolve(import.meta.dirname, "index.html"),
-        "lab/staff-design": resolve(import.meta.dirname, "lab/staff-design/index.html"),
-        "lab/harmonica-design": resolve(import.meta.dirname, "lab/harmonica-design/index.html"),
-      },
-    },
+    rollupOptions: { output: { assetFileNames: "assets/[name]-[hash][extname]" } },
   },
+  // Generated alongside the exact bundle, never hand-maintained.
+  publicDir: false,
+  plugins: [react(), { name: "build-identity", generateBundle() { this.emitFile({ type: "asset", fileName: "build-meta.json", source: JSON.stringify(buildMeta, null, 2) + "\n" }); } }],
 });

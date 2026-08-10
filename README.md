@@ -2,9 +2,9 @@
 
 A static, local-first trainer for 10-hole and 12-hole chromatic harmonicas. It teaches note location, score reading, rhythmic performance, guided songs, and absolute or relative ear playing. Audio is analyzed locally in the browser and is never uploaded.
 
-## Active implementation task
+## Production redesign
 
-The design-lab direction was approved, but the first attempt to migrate it into production was **not accepted**. The next Codex run must update the main application directly, remove the standalone lab product surface, and prove the deployed build.
+The main application now uses measured abcjs Timeline geometry and one shared light vector harmonica for microphone guidance and Touch input. Standalone visual design laboratories have been removed; the production URL is the sole product surface.
 
 Start here:
 
@@ -47,7 +47,7 @@ bun run test:production
 bun run capture:release
 ```
 
-The active task removes lab-only capture and routes after reusable code/fixtures are promoted.
+Release capture targets only the main application. The build emits `build-meta.json` with its exact source commit and also shows the short SHA in the UI.
 
 After publication, production verification must use the live build metadata and run:
 

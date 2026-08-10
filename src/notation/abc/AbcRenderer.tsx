@@ -13,13 +13,13 @@ export interface MusicStageProps {
   feedback?:"idle"|"hit"|"miss"; showNoteNames?:boolean; namingSystem?:NamingSystem;
   density?:StaffDensity; title:string; nowMs?:number;
 }
-const DENSITY:Record<StaffDensity,{padding:number;width:number;beat:number}>={spacious:{padding:16,width:38,beat:47},balanced:{padding:13,width:33,beat:40},compact:{padding:10,width:29,beat:35}};
+const DENSITY:Record<StaffDensity,{padding:number;width:number;beat:number}>={spacious:{padding:15,width:65,beat:68},balanced:{padding:12,width:55,beat:60},compact:{padding:10,width:45,beat:50}};
 
 export function MusicStage({document,mode,activeBeat,activeWrittenEventId,hiddenWrittenEventIds=new Set(),performedSegments=[],pitchTrace=[],feedback="idle",showNoteNames=false,namingSystem="letters",density="balanced",title,nowMs=performance.now()}:MusicStageProps){
-  const renderRoot=useRef<HTMLDivElement>(null),viewport=useRef<HTMLDivElement>(null),manualUntil=useRef(0);
+  const renderRoot=useRef<HTMLDivElement>(null),canvasRoot=useRef<HTMLDivElement>(null),viewport=useRef<HTMLDivElement>(null),manualUntil=useRef(0);
   const [anchors,setAnchors]=useState<RenderAnchor[]>([]),timeline=mode==="timeline",settings=DENSITY[density];
-  useEffect(()=>{const root=renderRoot.current;if(!root)return;const renderSource=timeline?timelineAbcSource(document.source):document.source;const visual=abcjs.renderAbc(root,renderSource,{add_classes:true,responsive:timeline?undefined:"resize",staffwidth:timeline?Math.max(1100,document.totalBeats*settings.beat):1050,scale:1.08,wrap:timeline?undefined:{minSpacing:1.8,maxSpacing:2.8,preferredMeasuresPerLine:4},timeBasedLayout:timeline?{minPadding:settings.padding,minWidth:settings.width,align:"left"}:undefined,paddingtop:20,paddingbottom:showNoteNames?58:32});
-    const update=()=>setAnchors(bindAbcRender(root,document.writtenEvents,visual[0]));update();const observer=new ResizeObserver(update);observer.observe(root);return()=>observer.disconnect();
+  useEffect(()=>{const root=renderRoot.current,coordinateRoot=canvasRoot.current;if(!root||!coordinateRoot)return;const renderSource=timeline?timelineAbcSource(document.source):document.source;const visual=abcjs.renderAbc(root,renderSource,{add_classes:true,responsive:timeline?undefined:"resize",staffwidth:timeline?Math.max(1100,document.totalBeats*settings.beat):1050,scale:1.08,wrap:timeline?undefined:{minSpacing:1.8,maxSpacing:2.8,preferredMeasuresPerLine:4},timeBasedLayout:timeline?{minPadding:settings.padding,minWidth:settings.width,align:"left"}:undefined,paddingtop:20,paddingbottom:showNoteNames?58:32});
+    let frame=0;const update=()=>{cancelAnimationFrame(frame);frame=requestAnimationFrame(()=>setAnchors(bindAbcRender(root,coordinateRoot,document.writtenEvents,visual[0])))};update();void globalThis.document.fonts?.ready.then(update);const observer=new ResizeObserver(update);observer.observe(root);observer.observe(coordinateRoot);return()=>{cancelAnimationFrame(frame);observer.disconnect()};
   },[document,timeline,settings.padding,settings.width,settings.beat,showNoteNames]);
   const geometry=useMemo(()=>buildTimelineGeometry(document.writtenEvents,document.soundingEvents,anchors),[document,anchors]);
   useEffect(()=>{const root=renderRoot.current;if(!root)return;for(const element of root.querySelectorAll<SVGElement>("[data-written-event-id]")){const id=element.dataset.writtenEventId!;element.classList.toggle("music-active",id===activeWrittenEventId);element.classList.toggle("music-hidden",hiddenWrittenEventIds.has(id));element.setAttribute("aria-hidden",hiddenWrittenEventIds.has(id)?"true":"false")}},[anchors,activeWrittenEventId,hiddenWrittenEventIds]);
@@ -30,7 +30,7 @@ export function MusicStage({document,mode,activeBeat,activeWrittenEventId,hidden
     <div className="stage-heading"><div><span className="eyebrow">{timeline?"TIMELINE STAFF":"ENGRAVED SCORE"}</span><h2>{title}</h2></div><div className="stage-legend"><span>◆ target</span><span>━ duration</span><span>✓ / × result</span><span>⌁ played pitch</span></div></div>
     <div className="music-viewport" ref={viewport} onPointerDown={()=>{manualUntil.current=performance.now()+3000}} onScroll={()=>{if(!timeline)manualUntil.current=performance.now()+1200}}>
       {timeline&&<div className="music-judgment" aria-label="Fixed judgment line"><span>JUDGMENT</span></div>}
-      <div className="music-canvas">
+      <div className="music-canvas" ref={canvasRoot}>
         <div className="ribbon-underlay" aria-hidden="true">{geometry.segments.map(segment=>{const event=document.writtenEvents.find(value=>value.id===segment.writtenEventId)!;const sound=document.soundingEvents.find(value=>value.id===segment.soundEventId);const progress=sound?Math.max(0,Math.min(1,(activeBeat-sound.startBeat)/sound.durationBeats)):event.startBeat<activeBeat?1:0;return <span key={segment.writtenEventId} className={`music-ribbon ${sound?.writtenEventIds.includes(activeWrittenEventId??"")?"active":""}`} data-written-event-id={segment.writtenEventId} style={{left:segment.startX,top:segment.centerY-5,width:Math.max(8,segment.endX-segment.startX)}}><i style={{width:`${progress*100}%`}}/></span>})}</div>
         <div className="abc-production-render" ref={renderRoot}/>
         <div className="music-performance-overlay" aria-hidden="true">

@@ -58,23 +58,23 @@ export function adaptAbc(source: string): AbcDocument {
   return {source,title:tune.metaText?.title??"Untitled",meter,tempoQpm:tempo,pickupBeats:tune.getPickupLength()*4,totalBeats:beat,writtenEvents,soundingEvents,diagnostics:tune.warnings??[]};
 }
 
-const relativeBounds=(element:Element,parent:HTMLElement):RectBounds=>{const a=element.getBoundingClientRect(),b=parent.getBoundingClientRect();return{left:a.left-b.left,top:a.top-b.top,width:a.width,height:a.height}};
+const relativeBounds=(element:Element,coordinateRoot:HTMLElement):RectBounds=>{const a=element.getBoundingClientRect(),b=coordinateRoot.getBoundingClientRect();return{left:a.left-b.left+coordinateRoot.scrollLeft,top:a.top-b.top+coordinateRoot.scrollTop,width:a.width,height:a.height}};
 const NOTEHEAD_SELECTORS=[".abcjs-notehead","[class*='notehead']","path.abcjs-note"];
 
 /** The sole boundary that inspects abcjs selectable objects and generated SVG. */
-export function bindAbcRender(container:HTMLElement,events:readonly WrittenMusicEvent[],tune?:RenderedTuneBoundary):RenderAnchor[]{
+export function bindAbcRender(container:HTMLElement,coordinateRoot:HTMLElement,events:readonly WrittenMusicEvent[],tune?:RenderedTuneBoundary):RenderAnchor[]{
   const elements=new Map<string,SVGElement>();
   for(const selectable of tune?.getSelectableArray()??[]){const event=events.find(item=>item.sourceRange?.start===selectable.absEl.abcelem.startChar);if(event)elements.set(event.id,selectable.svgEl)}
   const rests=[...container.querySelectorAll<SVGElement>("svg g.abcjs-rest")];
   events.filter(event=>event.kind==="rest").forEach((event,index)=>{if(rests[index])elements.set(event.id,rests[index]!)});
   const svgs=[...container.querySelectorAll("svg")];
   return events.flatMap(event=>{const element=elements.get(event.id);if(!element)return[];element.dataset.writtenEventId=event.id;
-    const eventBounds=relativeBounds(element,container), svg=element.closest("svg"), systemIndex=Math.max(0,svgs.indexOf(svg as SVGSVGElement));
+    const eventBounds=relativeBounds(element,coordinateRoot), svg=element.closest("svg"), systemIndex=Math.max(0,svgs.indexOf(svg as SVGSVGElement));
     let noteElement:Element|null=null;
     if(event.kind==="note") for(const selector of NOTEHEAD_SELECTORS){noteElement=element.matches(selector)?element:element.querySelector(selector);if(noteElement)break}
     if(event.kind==="note"&&!noteElement) console.warn(`[AbcAdapter] notehead fallback for ${event.id}; abcjs SVG classes may have changed`);
-    const bounds=noteElement?relativeBounds(noteElement,container):eventBounds;
-    const notehead=event.kind==="note"?{left:bounds.left,right:bounds.left+bounds.width,top:bounds.top,bottom:bounds.top+bounds.height,centerX:bounds.left+bounds.width/2,centerY:bounds.top+bounds.height/2}:undefined;
+    const bounds=noteElement?relativeBounds(noteElement,coordinateRoot):eventBounds;
+    const notehead=event.kind==="note"&&noteElement?{left:bounds.left,right:bounds.left+bounds.width,top:bounds.top,bottom:bounds.top+bounds.height,centerX:bounds.left+bounds.width/2,centerY:bounds.top+bounds.height/2}:undefined;
     return[{eventId:event.id,eventBounds,notehead,temporalX:notehead?.centerX??eventBounds.left+eventBounds.width/2,systemIndex}];
   });
 }

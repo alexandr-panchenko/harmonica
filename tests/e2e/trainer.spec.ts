@@ -138,6 +138,31 @@ test("score library and duration notation remain intact", async ({ page }) => {
   expect(await page.locator(".music-ribbon").count()).toBeGreaterThan(4);
 });
 
+test("timeline ribbons share notehead coordinates and fill measured intervals after resize", async ({ page }) => {
+  await page.goto("./");
+  await openMode(page, "Learn a song");
+  const measure = () => page.evaluate(() => {
+    const ribbons = [...document.querySelectorAll<HTMLElement>(".music-ribbon")];
+    const groups = [...document.querySelectorAll<SVGElement>(".abc-production-render [data-written-event-id]")];
+    return ribbons.slice(0, -1).flatMap(ribbon => {
+      const groupIndex = groups.findIndex(group => group.dataset.writtenEventId === ribbon.dataset.writtenEventId), group = groups[groupIndex], nextGroup = groups[groupIndex + 1];
+      const head = group?.querySelector<SVGGraphicsElement>(".abcjs-notehead,[class*='notehead'],path.abcjs-note");
+      if (!head || !nextGroup) return [];
+      const band = ribbon.getBoundingClientRect(), notehead = head.getBoundingClientRect(), next = nextGroup.getBoundingClientRect();
+      return [{ y: Math.abs((band.top + band.height / 2) - (notehead.top + notehead.height / 2)), start: band.left - (notehead.left + notehead.width / 2), gap: next.left + next.width / 2 - band.right }];
+    });
+  });
+  const desktop = await measure();
+  expect(desktop.length).toBeGreaterThan(4);
+  expect(Math.max(...desktop.map(value => value.y))).toBeLessThanOrEqual(1.5);
+  expect(Math.max(...desktop.map(value => Math.abs(value.start)))).toBeLessThanOrEqual(3);
+  expect(Math.max(...desktop.map(value => value.gap))).toBeLessThanOrEqual(8);
+  await page.setViewportSize({ width: 760, height: 900 });
+  await page.waitForTimeout(200);
+  const resized = await measure();
+  expect(Math.max(...resized.map(value => value.y))).toBeLessThanOrEqual(1.5);
+});
+
 test("staff mode persists and hidden ear events leak no engraved pitch", async ({ page }) => {
   await page.goto("./");
   await openMode(page,"Play the score");
@@ -203,42 +228,11 @@ test("microphone mode keeps compact instrument without touch quadrants", async (
   await expect(page.locator("[data-action-id]")).toHaveCount(0);
 });
 
-test("ear flow and diagnostic lab remain reachable", async ({ page }) => {
+test("ear flow remains reachable", async ({ page }) => {
   await page.goto("./");
   await openMode(page, "Play by ear");
   await page.getByRole("button", { name: "Reveal" }).click();
   await expect(page.locator('.abc-production-render [data-written-event-id]')).toHaveCount(4);
   await page.getByRole("button", { name: "In time" }).click();
   await page.getByRole("button", { name: "Count in + perform" }).click();
-  await page.goto("?lab=pitch");
-  await page.getByRole("button", { name: "Run synthetic" }).click();
-  await expect(page.getByText("C4")).toBeVisible();
-});
-
-test("isolated staff lab renders every comparison path and canonical anchors", async ({ page }) => {
-  await page.goto("lab/staff-design/");
-  await expect(page.getByTestId("staff-design-lab")).toBeVisible();
-  await expect(page.locator(".abcjs-note").first()).toBeVisible();
-  await expect(page.locator("[data-written-event-id]").first()).toBeVisible();
-  await expect(page.locator(".duration-ribbon").first()).toBeVisible();
-  for (const mode of ["standard", "timeline", "timeline-game", "standard-game"]) {
-    await page.getByLabel("Render mode").selectOption(mode);
-    await expect(page.locator('[data-render-mode="' + mode + '"]')).toBeVisible();
-  }
-  await page.getByLabel("Fixture").selectOption("compound-meter");
-  await expect(page.locator(".abcjs-note").first()).toBeVisible();
-});
-
-test("isolated harmonica lab exposes 10/12 direct geometry and ambiguity-safe slider", async ({ page }) => {
-  await page.goto("lab/harmonica-design/");
-  await expect(page.getByTestId("harmonica-design-lab")).toBeVisible();
-  await expect(page.locator(".physical-hole")).toHaveCount(12);
-  await expect(page.locator(".action-quadrants button")).toHaveCount(48);
-  await page.getByLabel("Instrument state").selectOption("mic-ambiguous");
-  await expect(page.getByTestId("lab-harmonica")).toHaveAttribute("data-slider", "neutral");
-  await page.getByRole("button", { name: "10 holes" }).click();
-  await expect(page.locator(".physical-hole")).toHaveCount(10);
-  await expect(page.locator(".action-quadrants button")).toHaveCount(40);
-  await page.locator('[data-action-id="5-blow-in"]').click();
-  await expect(page.getByTestId("lab-harmonica")).toHaveAttribute("data-slider", "in");
 });

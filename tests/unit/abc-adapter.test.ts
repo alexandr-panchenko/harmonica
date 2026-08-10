@@ -1,8 +1,8 @@
 import { describe, expect, test } from "bun:test";
-import { ABCJS_TESTED_VERSION, adaptAbc } from "../../src/labs/staff/AbcAdapter";
-import { STAFF_FIXTURES } from "../../src/labs/staff/fixtures";
+import { ABCJS_TESTED_VERSION, adaptAbc } from "../../src/notation/abc/AbcAdapter";
+import { STAFF_FIXTURES } from "../fixtures/staff";
 
-describe("staff lab abcjs boundary", () => {
+describe("production abcjs boundary", () => {
   test("keeps the tested engraver version explicit", () => {
     expect(ABCJS_TESTED_VERSION).toBe("6.5.2");
   });
