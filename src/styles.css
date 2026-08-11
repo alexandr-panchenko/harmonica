@@ -159,11 +159,15 @@ button.primary { padding: 9px 15px; border-color: var(--mode-accent); background
 .music-stage { position: relative; margin-top: .75rem; overflow: hidden; border: 1px solid var(--border-subtle); border-radius: 16px; background: var(--surface-1); box-shadow: var(--shadow); }
 .music-stage.hit { border-color: var(--success); }
 .music-stage.miss { border-color: var(--error); }
-.music-viewport { position: relative; height: 260px; overflow: auto; background: var(--surface-raised); }
-.music-stage.mode-score .music-viewport { height: 430px; }
-.music-canvas { position: relative; min-width: max-content; min-height: 100%; }
+.music-viewport { position: relative; background: var(--surface-raised); }
+.music-stage.mode-timeline .music-viewport { overflow-x: auto; overflow-y: hidden; }
+.music-stage.mode-score .music-viewport { max-height: min(70vh, 640px); overflow-x: hidden; overflow-y: auto; }
+.music-canvas { position: relative; }
+.music-stage.mode-timeline .music-canvas { width: max-content; min-width: 100%; }
+.music-stage.mode-score .music-canvas { width: 100%; min-width: 0; }
 .abc-production-render { position: relative; z-index: 2; color: var(--text-primary); }
-.music-stage.mode-timeline .abc-production-render { padding-left: calc(38vw - 90px); }
+.music-stage.mode-timeline .abc-production-render { padding-left: var(--timeline-leading-inset); }
+.music-stage.mode-score .abc-production-render { width: 100%; }
 .abc-production-render svg { display: block; color: var(--text-primary); }
 .abc-production-render svg path, .abc-production-render svg text { fill: currentColor; }
 .abc-production-render .music-hidden { visibility: hidden; }
@@ -219,7 +223,9 @@ button.primary { padding: 9px 15px; border-color: var(--mode-accent); background
 .product-cover > i:nth-child(1) { left: 7%; }.product-cover > i:nth-child(2) { left: 14%; }.product-cover > i:nth-child(3) { right: 7%; }
 .product-cover > span { position: absolute; right: 15%; top: 22px; color: #374d4d; font-size: 10px; font-weight: 800; letter-spacing: .06em; }
 .product-face { position: absolute; z-index: 3; inset: 58px 0 auto; display: grid; grid-template-columns: var(--left-cap-width) auto var(--right-cap-width); height: 106px; overflow: hidden; border: 1px solid #657674; border-radius: 14px; background: #abbab6; box-shadow: inset 0 4px 5px #fff9, inset 0 -7px 12px #34474355; }
-.product-cap { border-right: 1px solid #6e817d; background: linear-gradient(90deg, #687b77, #dce5e0 62%, #8a9b97); box-shadow: inset 5px 0 8px #3d514d55; }.product-cap.right { border: 0; border-left: 1px solid #6e817d; background: linear-gradient(90deg, #8a9b97, #edf3ef 42%, #60746f); box-shadow: inset -5px 0 8px #34474355; }
+.product-cap { position: relative; border-right: 1px solid #71827f; background: linear-gradient(180deg, #c4d0cc 0%, #abbab6 24%, #a3b2ae 82%, #899b97 100%); box-shadow: inset 1px 0 #eef4f080; }
+.product-cap.right { border: 0; border-left: 1px solid #71827f; background: linear-gradient(180deg, #c4d0cc 0%, #abbab6 24%, #a3b2ae 82%, #899b97 100%); box-shadow: inset -1px 0 #65777366; }
+.product-slider-socket { position: absolute; right: -1px; top: 27px; width: 12px; height: 18px; border: 1px solid #536662; border-right: 0; border-radius: 9px 0 0 9px; background: #71837f; box-shadow: inset 2px 0 3px #35474388; }
 .product-slider { position: absolute; z-index: 5; top: 73px; left: calc(100% - 10px); width: calc(var(--slider-reach) + 10px); height: 39px; }
 .product-slider span { position: absolute; left: 0; top: 15px; width: 43px; height: 8px; border: 1px solid #657471; border-radius: 3px; background: linear-gradient(#fff, #8d9d99); transition: width 180ms; }
 .product-slider i { position: absolute; right: 0; top: 5px; width: 34px; height: 27px; border: 1px solid #596b68; border-radius: 4px 14px 14px 4px; background: linear-gradient(#fff, #95a4a0); box-shadow: 0 3px 5px #29383455; transition: transform 180ms; }
@@ -295,7 +301,6 @@ button.primary { padding: 9px 15px; border-color: var(--mode-accent); background
 @media (max-width: 800px) {
   .game-header { grid-template-columns: auto 1fr; }.game-brand { display: none; }.game-actions { min-width: 0; }
   .game-actions .theme-control { display: none; }
-  .music-viewport { height: 300px; }.music-stage.mode-score .music-viewport { height: 380px; }
   .music-stage, .compact-harmonica-stage, .interactive-harmonica-stage { margin-left: -16px; margin-right: -16px; border-radius: 0; }
   .compact-harmonica-stage, .interactive-harmonica-stage { padding: 12px 0; }.compact-harmonica-stage { overflow: hidden; }.compact-harmonica-stage .product-harmonica { width: calc(100% - 20px); margin-left: 10px; }
   .compact-guidance { position: relative; padding: 0 10px; }.interactive-scroll { padding-left: 10px; }.stage-legend { display: none; }

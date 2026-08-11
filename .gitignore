@@ -22,3 +22,5 @@ scratch/
 # Generated visual-review output (reproducible with bun run capture:release).
 /docs/screenshots/release-candidate/
 /docs/screenshots/baseline/
+/docs/screenshots/bugfix-baseline/
+/docs/screenshots/bugfix-after/

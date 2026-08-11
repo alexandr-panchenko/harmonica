@@ -67,9 +67,9 @@ export function bindAbcRender(container:HTMLElement,coordinateRoot:HTMLElement,e
   for(const selectable of tune?.getSelectableArray()??[]){const event=events.find(item=>item.sourceRange?.start===selectable.absEl.abcelem.startChar);if(event)elements.set(event.id,selectable.svgEl)}
   const rests=[...container.querySelectorAll<SVGElement>("svg g.abcjs-rest")];
   events.filter(event=>event.kind==="rest").forEach((event,index)=>{if(rests[index])elements.set(event.id,rests[index]!)});
-  const svgs=[...container.querySelectorAll("svg")];
+  const svgs=[...container.querySelectorAll("svg")],systems=[...container.querySelectorAll<SVGGElement>(".abcjs-staff-wrapper")];
   return events.flatMap(event=>{const element=elements.get(event.id);if(!element)return[];element.dataset.writtenEventId=event.id;
-    const eventBounds=relativeBounds(element,coordinateRoot), svg=element.closest("svg"), systemIndex=Math.max(0,svgs.indexOf(svg as SVGSVGElement));
+    const eventBounds=relativeBounds(element,coordinateRoot), svg=element.closest("svg"), system=element.closest<SVGGElement>(".abcjs-staff-wrapper"), systemIndex=system?Math.max(0,systems.indexOf(system)):Math.max(0,svgs.indexOf(svg as SVGSVGElement));
     let noteElement:Element|null=null;
     if(event.kind==="note") for(const selector of NOTEHEAD_SELECTORS){noteElement=element.matches(selector)?element:element.querySelector(selector);if(noteElement)break}
     if(event.kind==="note"&&!noteElement) console.warn(`[AbcAdapter] notehead fallback for ${event.id}; abcjs SVG classes may have changed`);

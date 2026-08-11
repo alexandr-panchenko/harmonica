@@ -16,7 +16,7 @@ typed HarmonicaProfile → FingeringPlanner → HarmonicaStage
 
 `timelineGeometry.ts` sorts measured anchors by beat. A note segment begins just after its measured notehead and ends just before the next measured temporal anchor; rests terminate ribbons. The last event extrapolates from the local measured pixels-per-beat. A tied `SoundEvent` owns elapsed progress across its written segments. No production ribbon uses a parallel `duration * magicConstant` width. Find-note and pitch-hidden Ear canvases omit ribbons; duration contexts emphasize only the current ribbon and de-emphasize upcoming/distant events.
 
-`MusicStage` is the sole production renderer. Timeline flattens authored body line breaks without changing source offsets, applies Balanced time-based spacing, and uses an unlabeled 38% playback line only during timed performance. `AbcAdapter` extends abcjs's five measured staff rules across each full paper system. Score uses conventional wrapping and vertical system follow. Page titles and technical legends stay outside the canvas. Note names, hidden markers, pitch traces, and results are application overlays. Hidden Ear events set the complete engraved group—including accidental and accessible SVG content—to hidden and add identical pitch-neutral placeholders at one fixed staff height.
+`MusicStage` is the sole production renderer. It measures the real music viewport before engraving: Timeline flattens authored body line breaks without changing source offsets, applies Balanced time-based spacing, uses horizontal overflow only when the measured music is wider than the viewport, and adds an unlabeled 38% playback line only during timed performance. Score engraves at the available CSS width, wraps conventionally without horizontal scrolling, and follows systems vertically. `AbcAdapter` identifies systems within both split and single multi-system SVG output and extends abcjs's five measured staff rules across each full paper system. Page titles and technical legends stay outside the canvas. Note names, hidden markers, pitch traces, and results are application overlays. Hidden Ear events set the complete engraved group—including accidental and accessible SVG content—to hidden and add identical pitch-neutral placeholders at one fixed staff height.
 
 Generated Find, Ear, and Rhythm documents pass through `generatedExerciseToAbc`, a deliberately narrow serializer preserving written pitch, accidentals, duration, rests, meter, tempo, and ties. Built-in/imported score ABC remains the engraving source of truth.
 
@@ -27,6 +27,8 @@ Generated Find, Ear, and Rhythm documents pass through `generatedExerciseToAbc`,
 `FingeringPlanner` uses deterministic dynamic programming over a phrase. Its transition cost penalizes hole distance, unnecessary slide changes, breath changes, and awkward duplicate-position changes. It returns one recommendation, alternatives, or an explicit unplayable result. Pitch-correct microphone alternatives remain accepted.
 
 Interactive Touch provides 40/48 keyboard- and pointer-accessible direct actions, pointer capture, held duration, physical slider animation, reduced-motion support, safe-viewport auto-follow, and a three-second suspension after manual interaction.
+
+The shared chassis keeps typed 10/12-hole geometry. Its side caps use the same restrained vertical face material and seam treatment as the mouthpiece, and the right cap owns the visible socket around the slider rod.
 
 ## Exercise and audio
 

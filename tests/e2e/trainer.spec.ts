@@ -18,6 +18,24 @@ async function chooseAid(page: Page, group: string, value: "Off" | "On") {
   await page.getByRole("group", { name: group }).getByRole("button", { name: value, exact: true }).click();
 }
 
+async function musicMetrics(page: Page) {
+  return page.locator(".music-viewport").evaluate((viewport) => {
+    const svg = viewport.querySelector<SVGSVGElement>(".abc-production-render svg");
+    const note = viewport.querySelector<SVGGraphicsElement>(".abcjs-note");
+    const stage = viewport.closest<HTMLElement>(".music-stage")!;
+    return {
+      clientWidth: viewport.clientWidth,
+      scrollWidth: viewport.scrollWidth,
+      clientHeight: viewport.clientHeight,
+      scrollHeight: viewport.scrollHeight,
+      svgWidth: svg?.getBoundingClientRect().width ?? 0,
+      noteWidth: note?.getBoundingClientRect().width ?? 0,
+      stageHeight: stage.getBoundingClientRect().height,
+      systems: viewport.querySelectorAll(".abcjs-staff-wrapper").length,
+    };
+  });
+}
+
 test("main menu is focused on the five learning intents", async ({ page }) => {
   await page.goto("./");
   for (const name of ["Find a note", "Play the score", "Play by ear", "Rhythm training", "Learn a song"]) {
@@ -195,6 +213,56 @@ test("score library and duration notation remain intact", async ({ page }) => {
   expect(await page.locator(".music-ribbon").count()).toBeGreaterThan(4);
 });
 
+test("notation sizing follows the viewport and Score wraps instead of scaling down", async ({ page }, testInfo) => {
+  await page.goto("./");
+  await openMode(page, "Find a note");
+  const find = await musicMetrics(page);
+  expect(find.scrollWidth).toBeLessThanOrEqual(find.clientWidth + 1);
+  expect(Math.abs(find.svgWidth - find.clientWidth)).toBeLessThanOrEqual(2);
+  expect(find.stageHeight).toBeLessThan(220);
+
+  await page.getByRole("button", { name: /Menu/ }).click();
+  await openMode(page, "Play the score");
+  const timeline = await musicMetrics(page);
+  if (testInfo.project.name === "mobile") expect(timeline.scrollWidth).toBeGreaterThan(timeline.clientWidth);
+  await page.getByRole("button", { name: "Score", exact: true }).click();
+  const score = await musicMetrics(page);
+  expect(score.scrollWidth).toBeLessThanOrEqual(score.clientWidth + 1);
+  expect(Math.abs(score.svgWidth - score.clientWidth)).toBeLessThanOrEqual(2);
+  expect(score.noteWidth).toBeGreaterThanOrEqual(10);
+  expect(score.stageHeight).toBeLessThan(360);
+  if (testInfo.project.name === "mobile") expect(score.systems).toBeGreaterThanOrEqual(2);
+});
+
+test("Score remains readable in every mode where it is available", async ({ page }) => {
+  const contexts = ["Learn a song", "Rhythm training", "Play by ear"];
+  for (const name of contexts) {
+    await page.goto("./");
+    await openMode(page, name);
+    await page.getByRole("button", { name: "Score", exact: true }).click();
+    if (name === "Play by ear") await page.getByRole("button", { name: "Reveal", exact: true }).click();
+    const metrics = await musicMetrics(page);
+    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
+    expect(Math.abs(metrics.svgWidth - metrics.clientWidth)).toBeLessThanOrEqual(2);
+    expect(metrics.noteWidth).toBeGreaterThanOrEqual(10);
+    expect(metrics.systems).toBeGreaterThanOrEqual(1);
+  }
+});
+
+test("long Score documents scroll vertically without horizontal overflow", async ({ page }) => {
+  await page.goto("./");
+  await page.getByRole("button", { name: /Play the score/ }).click();
+  await page.getByText("Import ABC", { exact: true }).click();
+  const body = Array.from({ length: 32 }, () => "C D E F |").join(" ");
+  await page.getByLabel("ABC notation").fill(`X:9\nT:Long layout check\nM:4/4\nL:1/4\nQ:1/4=100\nK:C\n${body}`);
+  await page.getByRole("button", { name: "Open imported score" }).click();
+  await page.getByRole("button", { name: "Score", exact: true }).click();
+  const metrics = await musicMetrics(page);
+  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
+  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
+  expect(metrics.systems).toBeGreaterThanOrEqual(8);
+});
+
 test("timeline ribbons share notehead coordinates and fill measured intervals after resize", async ({ page }) => {
   await page.goto("./");
   await openMode(page, "Learn a song");
@@ -306,12 +374,16 @@ test("harmonica chassis, cover, face and slider remain aligned for both profiles
   await openMode(page, "Find a note");
   for (const holes of [10,12]) {
     await page.getByRole("button", { name: `Instrument: ${holes} holes` }).click();
-    const geometry=await page.locator(".product-harmonica").evaluate(root=>{const chassis=root.querySelector<HTMLElement>(".product-chassis")!,cover=root.querySelector<HTMLElement>(".product-cover")!,face=root.querySelector<HTMLElement>(".product-face")!,slider=root.querySelector<HTMLElement>(".product-slider")!;const c=chassis.getBoundingClientRect(),v=cover.getBoundingClientRect(),f=face.getBoundingClientRect(),s=slider.getBoundingClientRect();return{coverLeft:v.left-c.left,coverRight:c.right-v.right,faceLeft:f.left-c.left,faceRight:c.right-f.right,sliderAnchor:s.left-c.right}});
+    const geometry=await page.locator(".product-harmonica").evaluate(root=>{const chassis=root.querySelector<HTMLElement>(".product-chassis")!,cover=root.querySelector<HTMLElement>(".product-cover")!,face=root.querySelector<HTMLElement>(".product-face")!,slider=root.querySelector<HTMLElement>(".product-slider")!,left=root.querySelector<HTMLElement>(".product-cap.left")!,right=root.querySelector<HTMLElement>(".product-cap.right")!,socket=root.querySelector<HTMLElement>(".product-slider-socket")!;const c=chassis.getBoundingClientRect(),v=cover.getBoundingClientRect(),f=face.getBoundingClientRect(),s=slider.getBoundingClientRect(),o=socket.getBoundingClientRect();return{coverLeft:v.left-c.left,coverRight:c.right-v.right,faceLeft:f.left-c.left,faceRight:c.right-f.right,sliderAnchor:s.left-c.right,capMaterialsMatch:getComputedStyle(left).backgroundImage===getComputedStyle(right).backgroundImage,horizontalCapGradient:getComputedStyle(left).backgroundImage.includes("90deg"),socketWidth:o.width,socketIntersectsRod:o.right>=s.left}});
     expect(Math.abs(geometry.coverLeft)).toBeLessThanOrEqual(1);
     expect(Math.abs(geometry.coverRight)).toBeLessThanOrEqual(1);
     expect(Math.abs(geometry.faceLeft)).toBeLessThanOrEqual(1);
     expect(Math.abs(geometry.faceRight)).toBeLessThanOrEqual(1);
     expect(Math.abs(geometry.sliderAnchor+10)).toBeLessThanOrEqual(1);
+    expect(geometry.capMaterialsMatch).toBe(true);
+    expect(geometry.horizontalCapGradient).toBe(false);
+    expect(geometry.socketWidth).toBeGreaterThanOrEqual(10);
+    expect(geometry.socketIntersectsRod).toBe(true);
   }
 });
 
