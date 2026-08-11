@@ -1,4 +1,4 @@
-name: Test
+name: Test and deploy GitHub Pages
 
 on:
   push:
@@ -7,9 +7,15 @@ on:
 
 permissions:
   contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
 
 jobs:
-  test:
+  verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,3 +26,20 @@ jobs:
       - run: bun run typecheck
       - run: bun test
       - run: bun run build
+        env:
+          SOURCE_COMMIT: ${{ github.sha }}
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: verify
+    steps:
+      - name: Deploy exact verified build
+        id: deployment
+        uses: actions/deploy-pages@v4
