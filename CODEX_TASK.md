@@ -1,273 +1,161 @@
-# Active Codex task — repair deployment, remove neon styling, and redesign the main menu
+# Active Codex task — restore microphone reliability and make practice modes explicit
 
 Execute this task autonomously from the latest `main` in the local VS Code/Codex environment.
 
 Read completely before editing:
 
-1. [`docs/visual-system-spec.md`](docs/visual-system-spec.md) — binding design and acceptance specification for this iteration;
-2. [`README.md`](README.md);
-3. [`docs/architecture.md`](docs/architecture.md);
-4. current `src/app/App.tsx`, `src/styles.css`, theme/bootstrap code, tests, build metadata and deployment files.
+1. [`docs/functional-practice-spec.md`](docs/functional-practice-spec.md) — binding product, architecture and acceptance specification;
+2. [`docs/architecture.md`](docs/architecture.md);
+3. [`docs/audio-pipeline.md`](docs/audio-pipeline.md);
+4. [`README.md`](README.md);
+5. current production audio, exercise, notation, harmonica, application, tests and deployment files.
 
-The previous production-redesign task is closed as a development attempt. Do not repeat it. This iteration is focused on the shared visual system and the main mode-selection screen.
-
----
-
-## 1. Why the owner saw no change
-
-Treat the current repository and deployment as untrusted until verified.
-
-At task preparation time:
-
-- `main` contained merge commit `493383f35d188f3c4310056664ad3eb30bf84f40` plus later planning documentation;
-- the merged redesign diff mostly removed laboratory files and added build metadata, with only very small production-component changes;
-- `.github/workflows/pages.yml` was named `Test` and only installed, typechecked, tested and built—it did not publish;
-- GitHub Pages was still configured as a legacy `gh-pages:/` site;
-- `gh-pages` still pointed to `f12b04504810c3be25ae867e267c48798de7bc6f`, published from older source `e890779`.
-
-Therefore a successful test workflow did not prove that the live application changed.
-
-Do not begin visual work until one authoritative deployment path is repaired and the live site identifies the exact current source commit.
+The visual-system and notation-layout iterations are closed for now. This is a functional hardening and practice-engine iteration.
 
 ---
 
-## 2. Phase 0 — make deployment authoritative and provable
+## Mission
 
-### 2.1 Establish the baseline
+Deliver a deployed release candidate that:
 
-- fetch `main` and `gh-pages`;
-- record both SHAs;
-- inspect the actual GitHub Pages configuration;
-- inspect `.github/workflows/pages.yml` and any local deploy scripts;
-- build the latest `main` with exact source metadata;
-- verify `dist/build-meta.json` contains the current source SHA.
+- recognizes real harmonica notes reliably at ordinary soft/medium playing volume;
+- keeps live tuner/staff/harmonica feedback stable through brief estimator dropouts;
+- never pretends the microphone inferred a unique hole, breath or slide technique;
+- accepts pitch-only answers live without waiting for note release;
+- gives score/song/rhythm practice an explicit transport, seek bar and unambiguous Step versus In time behavior;
+- restores visible target-duration progress;
+- provides explicit Random phrase and Song excerpt lifecycle in Play by ear;
+- provides generated/preset pattern lifecycle in Rhythm training;
+- consolidates Play the score and Learn a song onto one shared Song Practice implementation with different visible presets;
+- preserves the authoritative GitHub Actions Pages deployment and build identity.
 
-### 2.2 Choose one deployment path
-
-Use exactly one of these paths and remove/disable conflicting paths:
-
-#### Preferred: official GitHub Pages workflow
-
-If credentials and repository settings permit:
-
-- change Pages build type to GitHub Actions/workflow;
-- use official `actions/configure-pages`, `actions/upload-pages-artifact` and `actions/deploy-pages`;
-- give the workflow the required `pages: write` and `id-token: write` permissions;
-- build only after install, typecheck and tests pass;
-- expose deployed URL from the deployment job.
-
-#### Acceptable fallback: authoritative `gh-pages` publication
-
-If the repository must remain legacy `gh-pages:/`:
-
-- make the workflow publish only the verified `dist/` directory to `gh-pages` after tests pass;
-- use `GITHUB_TOKEN`/repository write permission or a deterministic local deploy command;
-- make the publication commit reference the exact source SHA;
-- do not hand-copy source files to `gh-pages`;
-- do not leave a test-only workflow that never deploys.
-
-### 2.3 Deployment gate before design
-
-Deploy the unmodified current baseline first, then verify:
-
-- live `build-meta.json?cache-bust=<timestamp>` equals current `main` SHA;
-- the visible build identity matches;
-- a live smoke test passes.
-
-Only then start the visual redesign. This prevents another iteration from being confused with a stale deployment.
+Do not deliver another laboratory page. The live main application is the acceptance surface.
 
 ---
 
-## 3. Phase 1 — implement the CIELAB/LCh design system
+## Required implementation sequence
 
-Follow `docs/visual-system-spec.md` exactly.
+### 1. Establish the functional baseline
 
-### Required outcomes
+- fetch latest `main`;
+- record starting SHA and live `build-meta.json`;
+- run existing tests and pitch benchmark;
+- reproduce current microphone and exercise semantics from code and injected fixtures;
+- capture current production screenshots and diagnostic values;
+- do not assume passing clean-tone tests prove real-device sensitivity.
 
-- five perceptually selected LCh(ab) hue families, one for each mode;
-- dark/light pair for each family;
-- every pair has WCAG contrast ratio `>= 4.5:1` after conversion/gamut mapping to sRGB;
-- semantic neutral tokens for light and dark themes;
-- deterministic palette source and verification script;
-- verification command fails on contrast regression;
-- Light, Dark and System theme choices;
-- persisted preference and system fallback;
-- theme applied before first paint where practical;
-- all production components use semantic tokens rather than scattered literal theme colours.
+### 2. Refactor microphone state
 
-Do not derive contrast from Lab L* alone. Use WCAG relative luminance on final sRGB values.
+Implement the four distinct concepts required by the specification:
 
-A small dependency such as `culori` is acceptable if justified and pinned. A local tested implementation is also acceptable.
+- raw estimate;
+- candidate/display state;
+- accepted exercise state;
+- completed note segment.
 
-Add a script such as:
+Do not continue passing only `stable | null` to every consumer.
 
-```bash
-bun run verify:colors
-```
+Use time-based open/sustain/release hysteresis, a short display latch, robust calibration and persisted High/Normal/Low sensitivity. Add diagnostics for RMS/dB, noise floor, thresholds, clarity and gate state.
 
-and include it in CI/test verification.
+Pitch-only Find/Ear discovery must accept a live stable note before release. Duration-sensitive practice must consume continuous accepted time. In-time review must continue to use completed segments.
 
----
+### 3. Preserve honest harmonica ambiguity
 
-## 4. Phase 2 — remove the global neon visual language
+For detected MIDI, highlight all matching actions. Show breath or slider state only when all candidates agree. Otherwise present multiple possible positions and neutral technique state.
 
-Refactor existing CSS rather than adding a final override block.
+Do not “fix” ambiguity by choosing one physical action from audio.
 
-Remove or replace:
+### 4. Introduce shared practice transport
 
-- blue-black/black global canvas as the default;
-- radial aurora backgrounds;
-- large cyan/violet ambient glows;
-- glowing inactive cards and buttons;
-- text shadows used for legibility;
-- decorative monospaced microtext;
-- excessive uppercase tracking;
-- strong gradients on ordinary surfaces.
+Build one framework-independent transport with:
 
-Keep colour where it conveys function:
+- Step and realtime modes;
+- play/pause/restart;
+- count-in;
+- position beat/time;
+- measure/beat display;
+- draggable seek bar;
+- start from selected position;
+- deterministic clock tests.
 
-- duration ribbons;
-- current playback progress;
-- pitch trace;
-- keyboard focus;
-- success/error feedback;
-- restrained mode accents.
+#### Step
 
-Apply the new semantic surfaces and typography across:
+- correct target pitch accumulates held duration;
+- wrong pitch never skips a target;
+- rests require silence;
+- repeated equal notes require rearticulation;
+- visible mistake policies:
+  - Pause and continue;
+  - Restart note;
+  - Restart measure.
 
-- main menu;
-- game header and shell;
-- toolbars and controls;
-- song library;
-- settings;
-- tuner container;
-- staff container;
-- harmonica container;
-- review cards and feedback.
+#### In time
 
-Do not redesign staff geometry, ribbon geometry, harmonica geometry, microphone logic or exercise behaviour in this task.
+- transport never pauses for mistakes;
+- inputs become match/missing/extra results;
+- live and post-run pitch/timing/duration feedback remain separate.
 
-Do not leave a light main menu opening into unchanged black-neon training screens.
+Drive target ribbon fill from Step held progress or realtime transport. Keep played pitch trace as a distinct layer.
 
----
+### 5. Make ear phrases explicit
 
-## 5. Phase 3 — redesign the main mode-selection screen
+Remove fixed product behavior based on `EAR_TARGETS`.
 
-The main screen must explain the product and each learning mode. It must not use generated marketing slogans.
+Provide:
 
-### Remove completely
+- Random phrase;
+- Song excerpt;
+- phrase source summary;
+- Listen/Replay;
+- New phrase;
+- Skip;
+- Hint;
+- Reveal;
+- progress near the main controls;
+- Absolute and Relative behavior;
+- optional rhythm-performance stage after pitch discovery.
 
-- `YOUR INSTRUMENT · YOUR GAME`;
-- `Train your ear. Own the score.`;
-- `Choose a challenge and turn the chromatic harmonica into muscle memory.`;
-- any replacement slogan of the same kind;
-- unnecessary `01`–`05` numbering unless visual review proves it genuinely useful;
-- the action word `PLAY` as a decorative label.
+Phrase changes only through explicit lifecycle actions.
 
-### Use factual copy
+### 6. Make rhythm patterns explicit
 
-#### Main heading
+Remove fixed product behavior based on `RHYTHM_MELODY`.
 
-> Choose what to practise
+Provide generated and preset sources with:
 
-#### Main subtitle
+- New pattern;
+- meter;
+- measures;
+- difficulty;
+- allowed values/rests;
+- tempo;
+- any-pitch or fixed-pitch policy;
+- Step and In time using the shared transport.
 
-> Learn where notes are on a chromatic harmonica, read music, train rhythm and your ear, and play complete songs with microphone or touch guidance.
+Pattern changes only through explicit lifecycle actions.
 
-Minor editorial improvement is allowed only if it remains factual and specific.
+### 7. Consolidate song practice
 
-### Mode copy
+Create one shared Song Practice implementation and guidance presets:
 
-#### Find a note
+- Learn;
+- Practice;
+- Perform.
 
-> Read a note on the staff and find the matching pitch on the harmonica.
+The existing Play the score and Learn a song menu entries may remain as shortcuts to Practice and Learn presets for this iteration. They must not maintain separate engines, song selection, transport or results logic.
 
-#### Play the score
+### 8. Remove old duplicated state
 
-> Practise a melody note by note, then play it in time with feedback on pitch, timing and duration.
+After parity:
 
-#### Play by ear
-
-> Listen to a short phrase, work out its notes or intervals, and then perform it in rhythm.
-
-#### Rhythm training
-
-> Practise starts, holds, releases and rests without the added difficulty of learning a melody.
-
-#### Learn a song
-
-> Follow visible notation and harmonica guidance to start playing a complete melody immediately.
-
-Each mode card contains:
-
-- title;
-- one explanatory sentence;
-- restrained icon/musical mark;
-- direct `Start` action;
-- its mode accent used sparingly.
-
-### Layout
-
-Desktop:
-
-- concise explanatory intro;
-- five readable mode cards in a balanced grid or list;
-- no enormous decorative hero area;
-- no dependence on hover to read content.
-
-Phone:
-
-- one-column list;
-- title and explanation visible immediately;
-- comfortable touch targets;
-- no horizontal scroll;
-- no microtext.
-
-Header:
-
-- product name;
-- clear theme control;
-- settings only if useful on the menu.
-
-Footer:
-
-- privacy/local-audio note if useful;
-- build identity remains available but visually secondary.
+- remove dead fixed target/pattern constants from product behavior;
+- reduce the monolithic mode-specific state in `App.tsx`;
+- keep deterministic constants only as tests/fixtures;
+- update architecture and manual-test docs honestly.
 
 ---
 
-## 6. Visual review loop
-
-Before deployment, capture at minimum:
-
-- main menu, light, desktop;
-- main menu, dark, desktop;
-- main menu, light, phone portrait;
-- main menu, dark, phone portrait;
-- representative training screen, light;
-- the same screen, dark;
-- song library, light;
-- settings/theme control.
-
-Open and inspect the screenshots at original size.
-
-Self-review:
-
-- Is every heading and description readable without zooming?
-- Is the light theme calm and modern rather than empty or clinical?
-- Is the dark theme neutral rather than neon blue-black?
-- Are the five accents distinguishable but restrained?
-- Is any text below useful readable size?
-- Is any card dependent on glow or gradient for hierarchy?
-- Does the main screen explain every mode without marketing filler?
-- Do training screens visibly belong to the same product?
-- Does every accent/text/surface combination pass measured contrast?
-
-Perform at least one correction pass after screenshot review.
-
----
-
-## 7. Automated verification
+## Verification requirements
 
 Run at minimum:
 
@@ -283,72 +171,57 @@ bun run test:production
 bun run capture:release
 ```
 
-Add or update tests for:
+Add the deterministic fixtures and assertions required by `docs/functional-practice-spec.md`, including soft tones, amplitude/clarity dropouts, vibrato, bend, repeated articulation, calibration contamination, all Step policies, seek, realtime misses, ear lifecycle, rhythm generation and shared song presets.
 
-- palette generation determinism;
-- all five accent-pair contrast ratios;
-- neutral text/surface contrast;
-- theme System/Light/Dark behaviour;
-- persistence across reload;
-- no first-paint mismatch where testable;
-- main copy and mode descriptions;
-- theme control accessibility;
-- phone mode list;
-- mode navigation;
-- no regression of existing exercise entry points.
+Use the same production audio path for synthetic PCM, uploaded fixtures and microphone input.
 
-Do not add brittle full-page pixel-perfect assertions. Keep screenshots for visual review and use focused DOM/computed-style tests for invariants.
+Do not claim real-harmonica acceptance from synthetic tests. The final report must provide the short owner checklist from the specification.
 
 ---
 
-## 8. Deploy and stop for owner review
+## Preserve
 
-This is one owner-review iteration. Do not continue into another layout redesign after it is live.
+Do not regress:
+
+- current light/dark/system visual system;
+- production abcjs notation and responsive score/timeline layout;
+- 10-hole and 12-hole mappings;
+- compact and touch harmonica geometry;
+- sampled harmonica playback;
+- note labels and solfège;
+- song library and ABC import;
+- Pages workflow and build metadata;
+- all current modes until their behavior is migrated to the shared engines.
+
+---
+
+## Excluded
+
+Do not implement:
+
+- Cloudflare migration;
+- accounts;
+- achievements;
+- community melody publishing;
+- improvisation mode;
+- graphical notation editing;
+- another general visual redesign;
+- unrelated feature expansion.
+
+---
+
+## Deployment and completion
 
 After local verification:
 
-1. update canonical documentation honestly;
+1. update canonical documentation;
 2. create a detailed commit;
 3. push `main`;
-4. let the authoritative deployment path publish the exact build;
-5. wait for completion;
-6. verify live `build-meta.json` equals final `main` SHA;
-7. run production tests against the live URL;
-8. capture the live main menu in light and dark themes;
-9. leave a clean worktree;
-10. report and stop for owner feedback.
+4. wait for authoritative GitHub Pages deployment;
+5. verify live `build-meta.json` against final `main`;
+6. run production tests against the live URL;
+7. leave a clean worktree;
+8. report source SHA, workflow, live URL, tests, fixture results, architecture changes, known limitations and owner manual checklist;
+9. stop for owner testing with the physical harmonica.
 
-Final report must include:
-
-- starting SHA;
-- final source SHA;
-- deployment/publication SHA or workflow run;
-- live URL;
-- live build-meta result;
-- chosen LCh hues and generated light/dark values;
-- measured contrast table;
-- theme architecture;
-- copy changes;
-- files/CSS removed or refactored;
-- test results;
-- screenshot paths;
-- known limitations;
-- specific questions for the next visual iteration.
-
-The task is complete only when the owner can open the live URL and unmistakably see the new light-first main screen from the reported source commit.
-
----
-
-## Out of scope
-
-Do not implement in this iteration:
-
-- another staff/ribbon redesign;
-- another virtual harmonica geometry redesign;
-- Cloudflare migration;
-- authentication;
-- achievements;
-- user/community melody publishing;
-- improvisation mode;
-- notation editing;
-- unrelated feature expansion.
+The task is complete as a release candidate only when the live application exposes stable microphone feedback, explicit transport/practice semantics, explicit ear/rhythm lifecycle and shared song-practice behavior from the reported source commit.
