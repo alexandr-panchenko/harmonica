@@ -41,12 +41,12 @@ export class YinPitchEstimator implements PitchEstimator {
   }
 }
 
-export interface SyntheticOptions { midi: number; durationSec: number; sampleRate?: number; harmonics?: number[]; noise?: number; vibratoCents?: number; detuneCents?: number; seed?: number }
+export interface SyntheticOptions { midi: number; durationSec: number; sampleRate?: number; harmonics?: number[]; noise?: number; vibratoCents?: number; detuneCents?: number; gain?:number; seed?: number }
 export function syntheticTone(options: SyntheticOptions): Float32Array {
   const sampleRate = options.sampleRate ?? 48_000, length = Math.round(options.durationSec * sampleRate), output = new Float32Array(length), harmonics = options.harmonics ?? [1, .35, .15];
   let seed = options.seed ?? 42; const random = () => ((seed = (seed * 1664525 + 1013904223) >>> 0) / 0xffffffff) * 2 - 1;
   let phase = 0;
-  for (let i = 0; i < length; i++) { const t = i / sampleRate, edge = Math.min(1, t / .04, (options.durationSec - t) / .06), vibrato = (options.vibratoCents ?? 0) * Math.sin(2 * Math.PI * 5.5 * t), frequency = midiToFrequency(options.midi + ((options.detuneCents ?? 0) + vibrato) / 100); phase += 2 * Math.PI * frequency / sampleRate; let value = 0; harmonics.forEach((gain, index) => value += gain * Math.sin(phase * (index + 1))); output[i] = edge * (value * .45 + random() * (options.noise ?? 0)); }
+  for (let i = 0; i < length; i++) { const t = i / sampleRate, edge = Math.min(1, t / .04, (options.durationSec - t) / .06), vibrato = (options.vibratoCents ?? 0) * Math.sin(2 * Math.PI * 5.5 * t), frequency = midiToFrequency(options.midi + ((options.detuneCents ?? 0) + vibrato) / 100); phase += 2 * Math.PI * frequency / sampleRate; let value = 0; harmonics.forEach((gain, index) => value += gain * Math.sin(phase * (index + 1))); output[i] = edge * (value * (options.gain??.45) + random() * (options.noise ?? 0)); }
   return output;
 }
 

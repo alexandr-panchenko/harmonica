@@ -180,9 +180,10 @@ test("direct pointer and keyboard actions still capture a held note", async ({ p
   await page.goto("./");
   await openMode(page, "Play the score");
   await page.getByRole("button", { name: "Touch · alternative" }).click();
+  await page.getByRole("button", { name: "Start Step" }).click();
   const before = await page.locator(".music-active").getAttribute("data-written-event-id");
-  await pressAction(page, "1-blow-out", 180);
-  await page.waitForTimeout(380);
+  await pressAction(page, "1-blow-out", 680);
+  await page.waitForTimeout(120);
   const after = await page.locator(".music-active").getAttribute("data-written-event-id");
   expect(after).not.toBe(before);
   const cell = page.getByRole("button", { name: /Hole 1, blow, slide out/ });
@@ -195,9 +196,13 @@ test("direct pointer and keyboard actions still capture a held note", async ({ p
 test("hold duration remains exercise input", async ({ page }) => {
   await page.goto("./");
   await openMode(page, "Rhythm training");
+  await page.getByLabel("Rhythm source").selectOption("preset");
+  await page.getByRole("button", { name: "New pattern" }).click();
   await page.getByRole("button", { name: "Touch · alternative" }).click();
-  await pressAction(page, "1-blow-out", 700);
-  await expect(page.getByText(/Rhythm matched/)).toBeVisible();
+  await page.getByRole("button", { name: "Start Step" }).click();
+  const before=await page.getByLabel("Practice position").inputValue();
+  await pressAction(page, "1-blow-out", 850);
+  await expect.poll(async()=>Number(await page.getByLabel("Practice position").inputValue())).toBeGreaterThan(Number(before));
 });
 
 test("score library and duration notation remain intact", async ({ page }) => {
@@ -393,5 +398,32 @@ test("ear flow remains reachable", async ({ page }) => {
   await page.getByRole("button", { name: "Reveal" }).click();
   await expect(page.locator('.abc-production-render [data-written-event-id]')).toHaveCount(4);
   await page.getByRole("button", { name: "In time" }).click();
-  await page.getByRole("button", { name: "Count in + perform" }).click();
+  await page.getByRole("button", { name: "Count in + start" }).click();
+  await expect(page.getByRole("region",{name:"Practice transport"}).getByText("Count in · 4 beats",{exact:true})).toBeVisible();
+});
+
+test("transport seeks, pauses on drag, and exposes distinct Step policies",async({page})=>{
+  await page.goto("./");await openMode(page,"Play the score");
+  await expect(page.getByLabel("Practice position")).toBeVisible();
+  await page.getByLabel("Practice position").fill("4");
+  await expect(page.getByText(/Start position · beat 4.0/)).toBeVisible();
+  await page.getByRole("button",{name:"Start Step"}).click();
+  await page.getByLabel("Practice position").fill("2");
+  await expect(page.getByRole("button",{name:"Resume"})).toBeVisible();
+  for(const policy of ["pause","restart-note","restart-measure"])await page.getByLabel("Mistake policy").selectOption(policy);
+});
+
+test("ear and rhythm content changes only through explicit lifecycle controls",async({page})=>{
+  await page.goto("./");await openMode(page,"Play by ear");
+  const before=await page.locator(".source-summary b").innerText();await page.getByRole("button",{name:"Hint"}).click();expect(await page.locator(".source-summary b").innerText()).toBe(before);
+  await page.getByRole("button",{name:"New phrase"}).click();await expect(page.getByText(/New phrase · listen when ready/)).toBeVisible();
+  await page.getByRole("button",{name:"Skip"}).click();await expect(page.getByText(/Phrase skipped/)).toBeVisible();
+  await page.getByRole("button",{name:"Menu"}).click();await openMode(page,"Rhythm training");
+  await expect(page.getByLabel("Rhythm meter")).toBeVisible();await page.getByLabel("Rhythm meter").selectOption("3/4");await page.getByRole("button",{name:"New pattern"}).click();await expect(page.getByText(/New pattern ready/)).toBeVisible();
+});
+
+test("both song shortcuts open the same Song Practice with different presets",async({page})=>{
+  await page.goto("./");await openMode(page,"Play the score");await expect(page.getByRole("region",{name:"Song Practice guidance preset"})).toContainText("Practice preset");
+  await page.getByRole("button",{name:"Menu"}).click();await openMode(page,"Learn a song");await expect(page.getByRole("region",{name:"Song Practice guidance preset"})).toContainText("Learn preset");
+  await page.getByRole("button",{name:"Perform"}).click();await expect(page.getByRole("button",{name:"In time"})).toHaveClass(/active/);
 });

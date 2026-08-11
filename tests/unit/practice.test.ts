@@ -1,0 +1,19 @@
+import { describe, expect, test } from "bun:test";
+import { PracticeTransport } from "../../src/practice/PracticeTransport";
+import { StepPracticeEngine } from "../../src/practice/StepPracticeEngine";
+import type { MelodyEvent } from "../../src/music/melody";
+
+const events:MelodyEvent[]=[
+  {id:"a",kind:"note",midi:60,startBeat:0,durationBeats:1,measureIndex:0},
+  {id:"b",kind:"note",midi:60,startBeat:1,durationBeats:1,measureIndex:0},
+  {id:"r",kind:"rest",startBeat:2,durationBeats:1,measureIndex:0},
+  {id:"c",kind:"note",midi:64,startBeat:3,durationBeats:1,measureIndex:0},
+  {id:"d",kind:"note",midi:65,startBeat:4,durationBeats:1,measureIndex:1},
+];
+
+describe("shared practice transport",()=>{
+  test("realtime follows a deterministic clock, honors count-in, pause, and seek",()=>{let now=0;const transport=new PracticeTransport(events,120,"realtime",()=>now);transport.seek(2);transport.play(2);now=500;expect(transport.tick().status).toBe("count-in");now=1000;expect(transport.tick().status).toBe("playing");now=1500;expect(transport.tick().positionBeat).toBe(3);transport.pause();now=5000;expect(transport.tick().positionBeat).toBe(3);expect(transport.seek(4).status).toBe("paused")});
+  test("wrong pitch never advances and pause policy preserves correct hold",()=>{const engine=new StepPracticeEngine(events,"pause");engine.update({midi:60,sounding:true,articulation:1},0,60);engine.update({midi:60,sounding:true,articulation:1},500,60);expect(engine.state.heldBeats).toBe(.5);engine.update({midi:62,sounding:true,articulation:2},800,60);expect(engine.state.activeEventIndex).toBe(0);expect(engine.state.heldBeats).toBe(.5);engine.update({midi:60,sounding:true,articulation:3},1300,60);expect(engine.state.activeEventIndex).toBe(1)});
+  test("restart note and restart measure policies reset the promised scope",()=>{const note=new StepPracticeEngine(events,"restart-note");note.update({midi:60,sounding:true,articulation:1},0,60);note.update({midi:60,sounding:true,articulation:1},500,60);note.update({midi:62,sounding:true,articulation:2},600,60);expect(note.state.heldBeats).toBe(0);const measure=new StepPracticeEngine(events,"restart-measure");measure.seek(3);measure.update({midi:64,sounding:true,articulation:1},0,60);measure.update({midi:62,sounding:true,articulation:2},100,60);expect(measure.state.activeEventIndex).toBe(0)});
+  test("equal repeated notes require rearticulation and rests require silence",()=>{const engine=new StepPracticeEngine(events);engine.update({midi:60,sounding:true,articulation:1},0,60);engine.update({midi:60,sounding:true,articulation:1},1000,60);expect(engine.state.activeEventIndex).toBe(1);expect(engine.state.awaitingRearticulation).toBeTrue();engine.update({midi:60,sounding:true,articulation:1},2000,60);expect(engine.state.activeEventIndex).toBe(1);engine.update({sounding:false,articulation:1},2100,60);engine.update({midi:60,sounding:true,articulation:2},2200,60);engine.update({midi:60,sounding:true,articulation:2},3200,60);expect(engine.state.activeEventIndex).toBe(2);engine.update({sounding:false,articulation:2},3300,60);engine.update({sounding:false,articulation:2},4300,60);expect(engine.state.activeEventIndex).toBe(3)});
+});

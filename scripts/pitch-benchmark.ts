@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from "node:fs";
 import { AutocorrelationEstimator, MpmPitchEstimator, YinPitchEstimator, analyzeFrames, syntheticTone } from "../src/audio/pitch";
 import { AdaptivePitchTracker, NoteSegmenter } from "../src/audio/tracking";
+import { analyzePcmThroughProduction } from "../src/audio/ProductionAudioPipeline";
 
 const fixtures=[
   {name:"clean-low",midi:48,harmonics:[1,.3,.1],noise:0},
@@ -19,5 +20,7 @@ const gateFixtures=[
   {name:"vibrato-bend",frames:Array.from({length:45},(_,i)=>({midiFloat:60+i/90+Math.sin(i/2)*.06,clarity:.92,rms:.06}))},
 ];
 const gateRows=gateFixtures.map((fixture)=>{const tracker=new AdaptivePitchTracker();tracker.calibrateNoise(Array.from({length:50},(_,i)=>.009+(i%5)*.0005));const segmenter=new NoteSegmenter(100);let stableFrames=0,segments=0;fixture.frames.forEach((point,index)=>{const frame=tracker.update({time:index*16,...point});if(frame?.state==="stable")stableFrames++;if(segmenter.update(frame,index*16))segments++});if(segmenter.update(null,fixture.frames.length*16+120))segments++;return{fixture:fixture.name,legacyVisibleFrames:fixture.frames.filter((point)=>point.rms>.004&&point.midiFloat!==undefined).length,stableFrames,stableSegments:segments};});
-mkdirSync("docs/benchmarks",{recursive:true});writeFileSync("docs/benchmarks/pitch-synthetic.json",JSON.stringify({generatedAt:new Date().toISOString(),sampleRate:48000,rows,gateRows},null,2));console.table(rows);console.table(gateRows);
+const soft=syntheticTone({midi:60,durationSec:1,gain:.035,noise:.0004}),dropout=syntheticTone({midi:64,durationSec:1.2,gain:.08,vibratoCents:18,noise:.001});dropout.fill(0,Math.floor(.55*48000),Math.floor(.65*48000));const first=syntheticTone({midi:67,durationSec:.45,gain:.08}),silence=new Float32Array(Math.round(.45*48000)),second=syntheticTone({midi:67,durationSec:.45,gain:.08}),repeated=new Float32Array(first.length+silence.length+second.length);repeated.set(first);repeated.set(silence,first.length);repeated.set(second,first.length+silence.length);
+const productionRows=[["soft-normal",soft],["vibrato-dropout",dropout],["repeated-articulation",repeated]].map(([name,pcm])=>{const result=analyzePcmThroughProduction(pcm as Float32Array,48000);return{fixture:name as string,firstDisplayMs:result.bundles.find(bundle=>bundle.display)?.time??null,firstAcceptedMs:result.bundles.find(bundle=>bundle.accepted)?.time??null,displayDropoutFrames:result.bundles.filter(bundle=>bundle.signalState==="release"&&bundle.display).length,segments:result.segments.length,segmentMidis:result.segments.map(segment=>segment.classifiedMidi)}});
+mkdirSync("docs/benchmarks",{recursive:true});writeFileSync("docs/benchmarks/pitch-synthetic.json",JSON.stringify({generatedAt:new Date().toISOString(),sampleRate:48000,rows,gateRows,productionRows},null,2));console.table(rows);console.table(gateRows);console.table(productionRows);
 function median(values:number[]){return percentile(values,.5)}function percentile(values:number[],p:number){const sorted=[...values].sort((a,b)=>a-b);return sorted[Math.floor((sorted.length-1)*p)]??0}

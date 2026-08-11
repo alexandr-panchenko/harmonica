@@ -5,9 +5,11 @@ The Vite/React client is strict TypeScript and statically deployable. Domain log
 ```text
 ABC or generated canonical subset → AbcAdapter → written events + tie-merged sound events
                                              ↓
-microphone/touch → tracker/segmenter → scoring + monotonic beat clock → MusicStage
+microphone/decoded PCM → ProductionAudioPipeline → raw/candidate/display/accepted → NoteSegmenter
+                                             ↓                         ↓
+touch/accepted pitch → StepPracticeEngine / RealtimePerformanceEngine → PracticeTransport → MusicStage
                                              ↓
-typed HarmonicaProfile → FingeringPlanner → HarmonicaStage
+typed HarmonicaProfile → FingeringPlanner / every pitch match → HarmonicaStage
 ```
 
 ## Notation boundary
@@ -32,7 +34,11 @@ The shared chassis keeps typed 10/12-hole geometry. Its side caps use the same r
 
 ## Exercise and audio
 
-Exercise modes retain explicit mode, Step/In time, and input variants. Flow derives beat position from a monotonic performance/audio clock; Step advances event identity. `src/audio` owns sampled playback, output-contamination protection, acquisition, estimators, adaptive gating, tracking, and segmentation. Scoring never depends on SVG details.
+`src/audio/ProductionAudioPipeline.ts` is the shared PCM boundary for microphone capture, decoded recordings and deterministic synthetic fixtures. Estimator output is diagnostic raw state. `LivePitchState` separately exposes a plausible candidate, a short-latched display pitch and an exercise-grade accepted pitch. `NoteSegmenter` owns completed release/change events. Find and Ear discovery consume live accepted onsets; Step consumes continuous accepted time; realtime review consumes completed segments. Scoring never depends on SVG details.
+
+`src/practice/PracticeTransport.ts` is a framework-independent clock/state machine shared by song, ear-performance and rhythm practice. It owns Step/realtime mode, count-in, play/pause/restart, seek/start beat and deterministic clock advancement. `StepPracticeEngine` owns held progress, rests, rearticulation and the three mistake policies. `RealtimePerformanceEngine` records without stopping the clock and delegates authoritative post-run pitch/timing/duration alignment.
+
+Ear phrases and rhythm patterns live under `src/exercises/ear` and `src/exercises/rhythm`; content changes only through explicit lifecycle actions. Both Play the score and Learn a song use the same Song Practice controls and guidance presets from `src/song-practice`; their menu entries are shortcuts to Practice and Learn rather than separate engines.
 
 Assumptions: both profiles use standard C solo tuning; microphone input grades sounding pitch rather than physical technique; virtual bends remain a model extension; imported exercises are monodic.
 

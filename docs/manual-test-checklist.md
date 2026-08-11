@@ -1,16 +1,31 @@
-# Owner release-candidate checklist
+# Owner physical-instrument release-candidate checklist
 
-- [ ] Open Timeline Staff; inspect accidentals, duration values, rests, ties, beams, and barlines.
-- [ ] Play several notes in In time and judge ribbon timing, continuous motion, thickness, and density.
-- [ ] Switch to Engraved Score and confirm active-note/system movement.
-- [ ] Enable the real microphone and test a low, middle, and high note.
-- [ ] In Compact Guidance verify target hole, airflow, slider, correct/wrong, and an ambiguous pitch.
-- [ ] Play Learn a song on a laptop in Step and In time.
-- [ ] Play Learn a song on a phone without continuous manual scrolling.
-- [ ] Switch to Touch; press and hold all four action types and verify sampled duration/slider motion.
-- [ ] On phone, change target and confirm automatic focus; manually drag and confirm the three-second suspension.
-- [ ] Switch between the exact 10-hole and 12-hole profiles.
-- [ ] Test one real bend and record how the pitch tracker represents it.
-- [ ] Record observations for latency, Balanced density, ribbon thickness, and visual guidance.
+Automated fixtures do not prove physical microphone acceptance. Run this checklist on the real harmonica and record device/browser.
 
-Do not mark the release accepted until these real-instrument checks are complete.
+## Microphone
+
+- [ ] Calibrate during ordinary room silence; if a note is played, confirm calibration rejects it and retries.
+- [ ] Play low, middle and high notes softly, then normally.
+- [ ] Sustain each for about two seconds and confirm the tuner, trace and harmonica do not blink away.
+- [ ] Play one bend slowly and inspect continuous cents/pitch movement.
+- [ ] Articulate the same note twice and confirm two events.
+- [ ] Confirm no false note during ten seconds of silence.
+- [ ] Try High, Normal and Low sensitivity; record device/browser and the useful setting.
+
+## Practice
+
+- [ ] Step / Pause and continue: hold halfway, release, then resume and confirm retained progress.
+- [ ] Repeat with Restart note and confirm progress resets.
+- [ ] Play a wrong note and confirm no target is skipped.
+- [ ] Seek to the middle, start there and confirm notation/guidance follow.
+- [ ] Run In time with one deliberate miss; confirm the clock continues and the miss is recorded.
+- [ ] Confirm target ribbon fill and played-pitch trace are visually distinct.
+
+## Ear, rhythm and song
+
+- [ ] Generate and skip several random phrases.
+- [ ] Choose a song excerpt and solve it in Relative and Absolute modes.
+- [ ] Generate rhythm patterns and change meter/difficulty.
+- [ ] Open Play the score and Learn a song; confirm one Song Practice screen exposes visibly different Practice/Learn presets.
+
+Stop and report observations; do not mark the physical microphone accepted from synthetic results.

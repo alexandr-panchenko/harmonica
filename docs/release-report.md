@@ -1,21 +1,19 @@
-# Visual-system iteration release report
+# Functional practice release candidate
 
-Status: implementation and local visual correction pass complete; final live source identity is verified after the release commit is published.
+Status: implementation and local verification complete; final live identity is filled by the release commit and GitHub Pages workflow.
 
 ## Product result
 
-The production application now has one neutral semantic surface system across the menu, game shell, notation container, harmonica container, tuner, player setup, settings, song library and review cards. Light is the primary reference; Dark is a neutral charcoal counterpart, and System follows the browser unless the saved `harmonica-theme` preference selects an explicit theme. The inline document bootstrap applies the resolved theme before React mounts.
+Microphone processing no longer reduces every frame to `stable | null`. The production PCM boundary now exposes raw estimator diagnostics, candidate pitch, short-latched display pitch, exercise-grade accepted pitch and separately completed segments. Gate timing is elapsed-time based; persisted High/Normal/Low sensitivity derives explicit dB margins above a robust ambient floor. Contaminated calibration retries with a clear quiet-room instruction.
 
-The main menu uses the factual heading and five specified mode descriptions. Each card exposes its explanation without hover, a restrained mode mark and a direct `Start` action. Desktop uses a balanced two-column grid with the guided-song card spanning the row; phone portrait uses one readable column.
+Find and Ear discovery accept a live held pitch before release and require a new onset before another answer. Score/song/rhythm Step consume continuous accepted duration. Realtime performance keeps an independent clock and reviews completed segments. Microphone pitch highlights every matching physical action; breath and slide remain neutral when candidates disagree.
 
-The palette is generated in `src/design/palette.ts` from LCh(ab) hues 272°, 205°, 318°, 78° and 142°. The resulting reversible pairs are `#1b5293/#dce9ff`, `#005d66/#c1f1f5`, `#6c3e79/#f9e0fe`, `#654b18/#f9e5c6` and `#255b2c/#d2f0d2`; measured pair contrast ranges from 6.23:1 to 6.63:1. `bun run verify:colors` also checks neutral copy, focus contrast and that checked-in CSS tokens match the generated values.
+One framework-independent transport now drives song, ear-performance and rhythm practice. It supplies Step/In time, count-in, play/pause/restart, draggable seek, measure/beat/time position and scoped takes. Step implements Pause and continue, Restart note and Restart measure; rests require silence and equal repeated notes require rearticulation. Ribbon fill follows held Step progress or realtime position while the played trace remains separate.
 
-## Preserved production foundations
+Ear practice has Random phrase and Song excerpt sources with Listen/Replay, New, Skip, Hint, Reveal, progress, Relative/Absolute and an optional In time stage. Rhythm has generated/preset sources and explicit meter, measures, difficulty and pitch policy. Play the score and Learn a song share Song Practice and open its Practice/Learn presets; Perform is available on the same screen.
 
-The staff still uses the promoted abcjs adapter, measured notehead anchors, rest-aware ribbons and shared tie progress. The harmonica still uses the typed 10/12-hole profile, deterministic four-action geometry and out/in/neutral slider semantics recovered from the approved historical design labs. No public staff or harmonica lab route was restored, and this iteration changes neither renderer geometry nor exercise/audio behaviour.
+## Evidence and limitation
 
-## Deployment and evidence
+The automated gate includes the frozen install, colour verification, strict TypeScript, unit/domain fixtures, production-path pitch benchmark, build, desktop/mobile browser flows, production flows and expanded Light/Dark release capture. GitHub Pages remains the authoritative publisher and `build-meta.json` must equal the final main SHA.
 
-GitHub Pages now uses the official Actions publisher instead of the stale legacy `gh-pages` branch. The workflow verifies, builds once with the exact GitHub source SHA, uploads `dist/` and deploys that artifact. Baseline run `31483801140` proved the repaired path by publishing source `709dffd8870a88cbb1b4081f96c57ae97ba4e3e8`; live metadata matched and the production suite passed before visual work began.
-
-The release capture command writes the required eight review images to `docs/screenshots/release-candidate/`: light/dark desktop and phone menus, light/dark training screens, the light song library and settings/theme control. These reproducible images are intentionally ignored rather than committed. The correction pass tightened game-header sizing, anchored the main footer, improved dark-instrument boundaries and protected long build metadata in settings.
+Synthetic and browser tests do not establish real-harmonica microphone acceptance. The owner checklist in `manual-test-checklist.md` is the final physical-device gate.

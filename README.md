@@ -2,15 +2,15 @@
 
 A static, local-first trainer for 10-hole and 12-hole chromatic harmonicas. It teaches note location, score reading, rhythmic performance, guided songs, and absolute or relative ear playing. Audio is analyzed locally in the browser and is never uploaded.
 
-## Production visual system
+## Production application
 
 The main application uses a light-first semantic visual system with persisted Light, Dark and System themes. Five deterministic LCh(ab) accent families identify the learning modes, while measured abcjs Timeline geometry and the shared vector harmonica remain the production notation and instrument foundations. Standalone visual design laboratories remain removed; the production URL is the sole product surface.
 
 Start here:
 
 - [`CODEX_TASK.md`](CODEX_TASK.md) — active autonomous execution contract;
-- [`docs/production-redesign-spec.md`](docs/production-redesign-spec.md) — binding staff, harmonica, testing, cleanup, and deployment specification;
-- [`docs/design-labs-report.md`](docs/design-labs-report.md) — approved ideas and owner feedback on the rejected migration;
+- [`docs/functional-practice-spec.md`](docs/functional-practice-spec.md) — binding microphone, transport and exercise semantics;
+- [`docs/architecture.md`](docs/architecture.md) — current production boundaries;
 - [`docs/product-roadmap.md`](docs/product-roadmap.md) — longer-term roadmap and deferred work.
 
 The production result is evaluated only at:
@@ -22,11 +22,11 @@ Separate laboratory pages are not an acceptable deliverable for the active task.
 ## Current product map
 
 - **Find a note:** randomized staff-to-instrument training with configurable range and chromatic content.
-- **Play the score:** step and timed score practice.
-- **Play by ear:** relative and absolute phrase discovery.
-- **Rhythm training:** onset, duration, release, and rest practice.
-- **Learn a song:** fully guided beginner performance.
-- **Microphone:** local pitch, cents, gating, and note segmentation.
+- **Play the score:** shared Song Practice in the Practice preset, with Step/In time transport and seek.
+- **Play by ear:** explicit random/song-excerpt lifecycle, relative/absolute discovery and optional realtime performance.
+- **Rhythm training:** explicit generated/preset patterns with configurable meter, measures, difficulty and pitch policy.
+- **Learn a song:** the same Song Practice implementation in its Learn preset.
+- **Microphone:** separate raw/candidate/display/accepted/completed state, dB hysteresis and persisted sensitivity.
 - **Touch:** direct virtual harmonica input.
 - **Profiles:** explicit 10-hole and 12-hole C chromatic mappings.
 
