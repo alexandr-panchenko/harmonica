@@ -3,9 +3,19 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-    <meta name="theme-color" content="#071019" />
+    <meta name="theme-color" content="#f6f4ef" />
     <meta name="description" content="A microphone and virtual chromatic harmonica trainer for notes, scores, rhythm, and ear training." />
     <title>Harmonica Trainer</title>
+    <script>
+      (() => {
+        const saved = localStorage.getItem("harmonica-theme");
+        const preference = saved === "light" || saved === "dark" ? saved : "system";
+        const theme = preference === "system" ? matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light" : preference;
+        document.documentElement.dataset.themePreference = preference;
+        document.documentElement.dataset.theme = theme;
+        document.querySelector('meta[name="theme-color"]').content = theme === "dark" ? "#1b1c1b" : "#f6f4ef";
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

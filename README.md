@@ -2,9 +2,9 @@
 
 A static, local-first trainer for 10-hole and 12-hole chromatic harmonicas. It teaches note location, score reading, rhythmic performance, guided songs, and absolute or relative ear playing. Audio is analyzed locally in the browser and is never uploaded.
 
-## Production redesign
+## Production visual system
 
-The main application now uses measured abcjs Timeline geometry and one shared light vector harmonica for microphone guidance and Touch input. Standalone visual design laboratories have been removed; the production URL is the sole product surface.
+The main application uses a light-first semantic visual system with persisted Light, Dark and System themes. Five deterministic LCh(ab) accent families identify the learning modes, while measured abcjs Timeline geometry and the shared vector harmonica remain the production notation and instrument foundations. Standalone visual design laboratories remain removed; the production URL is the sole product surface.
 
 Start here:
 
@@ -38,6 +38,7 @@ Requirements: Bun 1.2.5 or later and a modern Chromium, Firefox, or Safari brows
 
 ```bash
 bun install --frozen-lockfile
+bun run verify:colors
 bun run typecheck
 bun test
 bun run benchmark:pitch
@@ -55,8 +56,8 @@ After publication, production verification must use the live build metadata and 
 PRODUCTION_URL=https://alexandr-panchenko.github.io/harmonica/ bun run test:production
 ```
 
-## Deployment state
+## Deployment
 
-GitHub Pages currently serves the root of the `gh-pages` branch. `.github/workflows/pages.yml` is a test/build CI gate rather than the publisher. The active task must build from the final pushed `main` SHA, publish only `dist` to `gh-pages`, expose generated `build-meta.json`, and verify that the live source SHA matches the final source commit.
+GitHub Pages uses the official Actions source. `.github/workflows/pages.yml` installs the frozen dependency graph, verifies the palette, typechecks and tests before building once with `SOURCE_COMMIT=${{ github.sha }}`; only that verified `dist/` artifact reaches the Pages deployment job. A release is accepted only after live `build-meta.json` and production tests agree with the final `main` SHA.
 
 No account, backend, database, telemetry, or cloud audio processing is included in this milestone.

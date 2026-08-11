@@ -33,3 +33,9 @@ Interactive Touch provides 40/48 keyboard- and pointer-accessible direct actions
 Exercise modes retain explicit mode, Step/In time, and input variants. Flow derives beat position from a monotonic performance/audio clock; Step advances event identity. `src/audio` owns sampled playback, output-contamination protection, acquisition, estimators, adaptive gating, tracking, and segmentation. Scoring never depends on SVG details.
 
 Assumptions: both profiles use standard C solo tuning; microphone input grades sounding pitch rather than physical technique; virtual bends remain a model extension; imported exercises are monodic.
+
+## Visual system and themes
+
+`src/design/palette.ts` is the deterministic LCh(ab) source for the five mode families and owns sRGB conversion, WCAG relative luminance and contrast calculation. `bun run verify:colors` checks every reversible accent pair, neutral text/surface combinations and the generated CSS values used by production.
+
+Components consume semantic CSS tokens from `src/styles.css`. The root document stores a `light`, `dark` or `system` preference; a small inline bootstrap in `index.html` resolves it before React mounts, and `ThemeControl` keeps explicit preference and system colour-scheme changes synchronized. Staff and harmonica geometry are unchanged by theme selection.

@@ -1,9 +1,16 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import packageJson from "./package.json";
 
-const sourceCommit = process.env.SOURCE_COMMIT ?? execFileSync("git", ["rev-parse", "HEAD"], { encoding: "utf8" }).trim();
+function repositoryHead(): string {
+  const head = readFileSync(resolve(import.meta.dirname, ".git/HEAD"), "utf8").trim();
+  if (!head.startsWith("ref: ")) return head;
+  return readFileSync(resolve(import.meta.dirname, ".git", head.slice(5)), "utf8").trim();
+}
+
+const sourceCommit = process.env.SOURCE_COMMIT ?? process.env.GITHUB_SHA ?? repositoryHead();
 const builtAt = process.env.BUILD_TIME ?? new Date().toISOString();
 const buildMeta = { sourceCommit, builtAt, version: packageJson.version };
 

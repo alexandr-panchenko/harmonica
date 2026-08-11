@@ -27,7 +27,7 @@ export function MusicStage({document,mode,activeBeat,activeWrittenEventId,hidden
   const active=document.writtenEvents.find(event=>event.id===activeWrittenEventId),held=active?Math.max(0,Math.min(1,(activeBeat-active.startBeat)/active.durationBeats)):0;
   const yForMidi=(midi:number)=>{const notes=document.writtenEvents.filter(event=>event.kind==="note"&&event.midi!==undefined).map(event=>({event,anchor:anchors.find(a=>a.eventId===event.id)})).filter(value=>value.anchor?.notehead);const closest=notes.sort((a,b)=>Math.abs((a.event.midi??0)-midi)-Math.abs((b.event.midi??0)-midi))[0];if(!closest?.anchor?.notehead)return 100;return closest.anchor.notehead.centerY-(midi-(closest.event.midi??midi))*3.8};
   return <section className={`music-stage mode-${mode} ${feedback}`} aria-label={`${title} music staff`}>
-    <div className="stage-heading"><div><span className="eyebrow">{timeline?"TIMELINE STAFF":"ENGRAVED SCORE"}</span><h2>{title}</h2></div><div className="stage-legend"><span>◆ target</span><span>━ duration</span><span>✓ / × result</span><span>⌁ played pitch</span></div></div>
+    <div className="stage-heading"><div><span className="eyebrow">{timeline?"Timeline staff":"Engraved score"}</span><h2>{title}</h2></div><div className="stage-legend"><span>◆ target</span><span>━ duration</span><span>✓ / × result</span><span>⌁ played pitch</span></div></div>
     <div className="music-viewport" ref={viewport} onPointerDown={()=>{manualUntil.current=performance.now()+3000}} onScroll={()=>{if(!timeline)manualUntil.current=performance.now()+1200}}>
       {timeline&&<div className="music-judgment" aria-label="Fixed judgment line"><span>JUDGMENT</span></div>}
       <div className="music-canvas" ref={canvasRoot}>

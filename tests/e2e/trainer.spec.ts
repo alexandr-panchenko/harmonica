@@ -24,6 +24,49 @@ test("main menu is focused on the five learning intents", async ({ page }) => {
     await expect(page.getByRole("button", { name: new RegExp(name) })).toBeVisible();
   }
   await expect(page.getByRole("region", { name: "Player setup" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Choose what to practise" })).toBeVisible();
+  await expect(page.getByText("Learn where notes are on a chromatic harmonica, read music, train rhythm and your ear, and play complete songs with microphone or touch guidance.")).toBeVisible();
+  for (const copy of [
+    "Read a note on the staff and find the matching pitch on the harmonica.",
+    "Practise a melody note by note, then play it in time with feedback on pitch, timing and duration.",
+    "Listen to a short phrase, work out its notes or intervals, and then perform it in rhythm.",
+    "Practise starts, holds, releases and rests without the added difficulty of learning a melody.",
+    "Follow visible notation and harmonica guidance to start playing a complete melody immediately.",
+  ]) await expect(page.getByText(copy)).toBeVisible();
+  await expect(page.getByText(/Train your ear|Own the score|YOUR INSTRUMENT|PLAY/, { exact: false })).toHaveCount(0);
+});
+
+test("theme control persists explicit choices and System follows the browser", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
+  await page.goto("./");
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.getByRole("group", { name: "Theme" }).getByRole("button", { name: "Light" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.reload();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+  await page.getByRole("group", { name: "Theme" }).getByRole("button", { name: "System" }).click();
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
+});
+
+test("saved theme is applied by bootstrap before React mounts", async ({ page }) => {
+  await page.addInitScript(() => localStorage.setItem("harmonica-theme", "dark"));
+  await page.goto("./");
+  expect(await page.evaluate(() => ({ theme: document.documentElement.dataset.theme, preference: document.documentElement.dataset.themePreference }))).toEqual({ theme: "dark", preference: "dark" });
+});
+
+test("phone menu is a readable single column and every mode remains reachable", async ({ page }, testInfo) => {
+  test.skip(testInfo.project.name !== "mobile", "phone portrait assertion");
+  await page.goto("./");
+  const cards = page.locator(".mode-choice");
+  await expect(cards).toHaveCount(5);
+  const boxes = await cards.evaluateAll(nodes => nodes.map(node => { const box = node.getBoundingClientRect(); return { left: box.left, width: box.width, height: box.height }; }));
+  expect(new Set(boxes.map(box => Math.round(box.left))).size).toBe(1);
+  expect(Math.max(...boxes.map(box => box.width))).toBeLessThanOrEqual(page.viewportSize()!.width);
+  expect(Math.min(...boxes.map(box => box.height))).toBeGreaterThanOrEqual(120);
+  await cards.first().click();
+  await expect(page.getByRole("heading", { name: "Find the note" })).toBeVisible();
 });
 
 test("microphone uses compact guidance and touch exposes four direct actions per hole", async ({ page }) => {

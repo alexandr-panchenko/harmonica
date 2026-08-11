@@ -4,9 +4,10 @@
   "version": "2.0.0",
   "type": "module",
   "scripts": {
-    "dev": "bunx --bun vite",
-    "build": "bunx --bun vite build",
-    "preview": "bunx --bun vite preview",
+    "dev": "bunx vite",
+    "build": "bunx vite build",
+    "verify:colors": "bun run scripts/verify-colors.ts",
+    "preview": "bunx vite preview",
     "typecheck": "tsc --noEmit",
     "test": "bun test",
     "test:browser": "playwright test --workers=6",
