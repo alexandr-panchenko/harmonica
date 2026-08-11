@@ -86,6 +86,13 @@ test("microphone uses compact guidance and touch exposes four direct actions per
     return Boolean(instrument.compareDocumentPosition(setup) & Node.DOCUMENT_POSITION_FOLLOWING);
   });
   expect(setupFollowsInstrument).toBe(true);
+  const inputFollowsInstrument = await page.evaluate(() => {
+    const instrument = document.querySelector('[data-testid="interactive-harmonica"]')!;
+    const input = document.querySelector(".harmonica-input")!;
+    return Boolean(instrument.compareDocumentPosition(input) & Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+  expect(inputFollowsInstrument).toBe(true);
+  await expect(page.locator(".music-controls").getByRole("group", { name: "Input source" })).toHaveCount(0);
 });
 
 test("visible instrument selector switches full 10-hole and 12-hole models and persists", async ({ page }) => {
@@ -109,6 +116,10 @@ test("visible instrument selector switches full 10-hole and 12-hole models and p
 test("all four independent label combinations and naming changes work without reload", async ({ page }) => {
   await page.goto("./");
   await openMode(page, "Find a note");
+  await chooseAid(page, "Harmonica note names", "On");
+  await expect(page.locator(".compact-note-names")).toHaveCount(12);
+  await expect(page.locator('.compact-hole[data-hole="1"] .compact-note-names')).toContainText("C4");
+  await chooseAid(page, "Harmonica note names", "Off");
   await page.getByRole("button", { name: "Touch · alternative" }).click();
   await expect(page.locator(".abc-note-name")).toHaveCount(0);
   await expect(page.locator(".interactive-hole strong")).toHaveCount(0);
@@ -176,6 +187,9 @@ test("score library and duration notation remain intact", async ({ page }) => {
   await page.getByRole("button", { name: /Play the score/ }).click();
   await expect(page.getByRole("heading", { name: "Choose your song" })).toBeVisible();
   await expect(page.locator("select")).toHaveCount(0);
+  await expect(page.locator(".song-card small")).toHaveCount(0);
+  await expect(page.locator(".song-grid")).not.toContainText(/BPM|notes/);
+  await expect(page.locator(".import-source")).toBeVisible();
   await page.getByRole("button", { name: /Twinkle Twinkle/ }).click();
   expect(await page.locator(".abcjs-note").count()).toBeGreaterThan(3);
   expect(await page.locator(".music-ribbon").count()).toBeGreaterThan(4);
@@ -192,13 +206,13 @@ test("timeline ribbons share notehead coordinates and fill measured intervals af
       const head = group?.querySelector<SVGGraphicsElement>(".abcjs-notehead,[class*='notehead'],path.abcjs-note");
       if (!head || !nextGroup) return [];
       const band = ribbon.getBoundingClientRect(), notehead = head.getBoundingClientRect(), next = nextGroup.getBoundingClientRect();
-      return [{ y: Math.abs((band.top + band.height / 2) - (notehead.top + notehead.height / 2)), start: band.left - (notehead.left + notehead.width / 2), gap: next.left + next.width / 2 - band.right }];
+      return [{ y: Math.abs((band.top + band.height / 2) - (notehead.top + notehead.height / 2)), start: band.left - notehead.right, gap: next.left + next.width / 2 - band.right }];
     });
   });
   const desktop = await measure();
   expect(desktop.length).toBeGreaterThan(4);
   expect(Math.max(...desktop.map(value => value.y))).toBeLessThanOrEqual(1.5);
-  expect(Math.max(...desktop.map(value => Math.abs(value.start)))).toBeLessThanOrEqual(3);
+  expect(Math.min(...desktop.map(value => value.start))).toBeGreaterThanOrEqual(3);
   expect(Math.max(...desktop.map(value => value.gap))).toBeLessThanOrEqual(8);
   await page.setViewportSize({ width: 760, height: 900 });
   await page.waitForTimeout(200);
@@ -217,6 +231,8 @@ test("staff mode persists and hidden ear events leak no engraved pitch", async (
   await expect(page.locator(".abc-production-render .music-hidden")).toHaveCount(4);
   await expect(page.locator(".abc-production-render .music-hidden").first()).toHaveCSS("visibility","hidden");
   await expect(page.locator(".hidden-pitch-marker")).toHaveCount(4);
+  const placeholderTops=await page.locator(".hidden-pitch-marker").evaluateAll(nodes=>nodes.map(node=>Math.round(node.getBoundingClientRect().top)));
+  expect(new Set(placeholderTops).size).toBe(1);
   await expect(page.locator(".abc-note-name")).toHaveCount(0);
   await expect(page.locator(".compact-hole.target")).toHaveCount(0);
 });
@@ -269,6 +285,34 @@ test("microphone mode keeps compact instrument without touch quadrants", async (
   await page.getByRole("button", { name: "Microphone · recommended" }).click();
   await expect(page.getByTestId("compact-harmonica")).toBeVisible();
   await expect(page.locator("[data-action-id]")).toHaveCount(0);
+});
+
+test("staff canvas contains music without technical labels or find-mode ribbons", async ({ page }) => {
+  await page.goto("./");
+  await openMode(page, "Find a note");
+  const stage=page.locator(".music-stage");
+  const visibleText=await stage.evaluate(node=>(node as HTMLElement).innerText);
+  expect(visibleText).not.toMatch(/Timeline staff|Read the target|Find a note|JUDGMENT|abcjs|balanced density/);
+  await expect(stage.locator(".music-stage-status, .stage-heading")).toHaveCount(0);
+  await expect(stage.locator(".music-ribbon")).toHaveCount(0);
+  await expect(stage.locator(".music-playhead")).toHaveCount(0);
+  await expect(stage.locator(".abcjs-note")).toHaveCount(1);
+  const widths=await stage.locator(".abcjs-staff").evaluateAll(groups=>groups.map(group=>{const staff=group.getBoundingClientRect(),viewport=group.closest(".music-viewport")!.getBoundingClientRect();return{staff:staff.width,viewport:viewport.width}}));
+  expect(Math.min(...widths.map(value=>value.staff/value.viewport))).toBeGreaterThan(.8);
+});
+
+test("harmonica chassis, cover, face and slider remain aligned for both profiles", async ({ page }) => {
+  await page.goto("./");
+  await openMode(page, "Find a note");
+  for (const holes of [10,12]) {
+    await page.getByRole("button", { name: `Instrument: ${holes} holes` }).click();
+    const geometry=await page.locator(".product-harmonica").evaluate(root=>{const chassis=root.querySelector<HTMLElement>(".product-chassis")!,cover=root.querySelector<HTMLElement>(".product-cover")!,face=root.querySelector<HTMLElement>(".product-face")!,slider=root.querySelector<HTMLElement>(".product-slider")!;const c=chassis.getBoundingClientRect(),v=cover.getBoundingClientRect(),f=face.getBoundingClientRect(),s=slider.getBoundingClientRect();return{coverLeft:v.left-c.left,coverRight:c.right-v.right,faceLeft:f.left-c.left,faceRight:c.right-f.right,sliderAnchor:s.left-c.right}});
+    expect(Math.abs(geometry.coverLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.coverRight)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.faceLeft)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.faceRight)).toBeLessThanOrEqual(1);
+    expect(Math.abs(geometry.sliderAnchor+10)).toBeLessThanOrEqual(1);
+  }
 });
 
 test("ear flow remains reachable", async ({ page }) => {

@@ -79,4 +79,15 @@ export function bindAbcRender(container:HTMLElement,coordinateRoot:HTMLElement,e
   });
 }
 
+/** abcjs time-based layout shortens the five staff rules to the event span; production keeps each system readable across its full paper width. */
+export function extendStaffLines(container:HTMLElement,scale=1.08):void{
+  for(const svg of container.querySelectorAll<SVGSVGElement>("svg")){
+    const paperWidth=Number(svg.getAttribute("width"));if(!Number.isFinite(paperWidth))continue;const endX=paperWidth/scale-14;
+    for(const staff of svg.querySelectorAll<SVGGElement>("g.abcjs-staff"))for(const path of staff.querySelectorAll<SVGPathElement>(":scope > path")){
+      const values=path.getAttribute("d")?.match(/-?\d+(?:\.\d+)?/g)?.map(Number);if(!values||values.length!==8)continue;
+      path.setAttribute("d",`M ${values[0]} ${values[1]} L ${endX} ${values[3]} L ${endX} ${values[5]} L ${values[6]} ${values[7]} z`);
+    }
+  }
+}
+
 export const ABCJS_TESTED_VERSION="6.5.2";

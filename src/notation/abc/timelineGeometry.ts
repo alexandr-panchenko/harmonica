@@ -15,7 +15,8 @@ export function buildTimelineGeometry(events:readonly WrittenMusicEvent[],sounds
   const segments=measured.flatMap((item,index)=>{if(item.event.kind==="rest"||!item.anchor.notehead)return[];
     const next=measured[index+1], intervalEnd=next&&next.anchor.systemIndex===item.anchor.systemIndex?next.anchor.temporalX-endGap:item.anchor.temporalX+item.event.durationBeats*localPixelsPerBeat(index)-endGap;
     const sound=sounds.find(value=>value.writtenEventIds.includes(item.event.id));
-    return[{writtenEventId:item.event.id,soundEventId:sound?.id,startX:item.anchor.notehead.centerX-Math.min(2,(item.anchor.notehead.right-item.anchor.notehead.left)*.12),endX:Math.max(item.anchor.notehead.right+8,intervalEnd),centerY:item.anchor.notehead.centerY,systemIndex:item.anchor.systemIndex}];
+    const startX=item.anchor.notehead.right+4;
+    return[{writtenEventId:item.event.id,soundEventId:sound?.id,startX,endX:Math.max(startX+5,intervalEnd),centerY:item.anchor.notehead.centerY,systemIndex:item.anchor.systemIndex}];
   });
   const beatToX=(beat:number,systemIndex?:number)=>{const candidates=systemIndex===undefined?points:points.filter(point=>point.systemIndex===systemIndex);if(!candidates.length)return 0;let left=candidates[0]!,right=candidates.at(-1)!;for(let i=1;i<candidates.length;i++)if(beat<=candidates[i]!.beat){left=candidates[i-1]!;right=candidates[i]!;break}const span=Math.max(.001,right.beat-left.beat);return left.x+(beat-left.beat)/span*(right.x-left.x)};
   return{segments,beatToX};

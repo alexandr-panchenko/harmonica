@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { harmonicaLayout } from "../../src/harmonica-ui/geometry";
 import {
   STANDARD_C10,
   STANDARD_C10_ACTIONS,
@@ -23,6 +24,7 @@ function expectCompleteLayout(profile: HarmonicaProfile, layout: readonly Harmon
 }
 
 describe("harmonica profiles", () => {
+  test("10 and 12 hole bodies share the same cap and slider coordinate model",()=>{const ten=harmonicaLayout(10),twelve=harmonicaLayout(12);expect(ten.chassisWidth).toBe(ten.leftCapWidth+10*ten.holeWidth+ten.rightCapWidth);expect(twelve.chassisWidth).toBe(twelve.leftCapWidth+12*twelve.holeWidth+twelve.rightCapWidth);expect(ten.overallWidth-ten.chassisWidth).toBe(ten.sliderReach);expect(twelve.overallWidth-twelve.chassisWidth).toBe(twelve.sliderReach)});
   test("matches the complete explicit 10-hole owner table", () => {
     expectCompleteLayout(STANDARD_C10, STANDARD_C10_ACTIONS);
     expect(STANDARD_C10.holeCount).toBe(10);

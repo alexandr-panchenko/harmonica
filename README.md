@@ -30,7 +30,7 @@ Separate laboratory pages are not an acceptable deliverable for the active task.
 - **Touch:** direct virtual harmonica input.
 - **Profiles:** explicit 10-hole and 12-hole C chromatic mappings.
 
-The active rebuild preserves all of these while replacing the central production notation and virtual-instrument presentation.
+The production UI keeps page instructions and controls outside the music canvas, uses measured post-notehead duration ribbons only where rhythm matters, and shares one responsive chassis model across compact and touch 10/12-hole instruments.
 
 ## Run and validate
 

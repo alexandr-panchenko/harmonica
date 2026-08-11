@@ -11,6 +11,6 @@ const anchor=(eventId:string,x:number,y=70):RenderAnchor=>({eventId,eventBounds:
 const anchors=[anchor("a",100),anchor("b",150),anchor("r",250),anchor("c",300)];
 const sounds:SoundEvent[]=[{id:"s0",midi:60,startBeat:0,durationBeats:1,writtenEventIds:["a"]},{id:"s1",midi:62,startBeat:1,durationBeats:2,writtenEventIds:["b"]},{id:"s2",midi:64,startBeat:4,durationBeats:1,writtenEventIds:["c"]}];
 describe("measured timeline geometry",()=>{
- test("uses notehead height and next measured temporal anchor",()=>{const geometry=buildTimelineGeometry(events,sounds,anchors);expect(geometry.segments[0]!.centerY).toBe(70);expect(geometry.segments[0]!.startX).toBeGreaterThanOrEqual(98);expect(geometry.segments[0]!.startX).toBeLessThanOrEqual(100);expect(geometry.segments[0]!.endX).toBe(145);expect(geometry.segments[1]!.endX).toBe(245)});
+ test("starts after the notehead at its height and ends near the next temporal anchor",()=>{const geometry=buildTimelineGeometry(events,sounds,anchors);expect(geometry.segments[0]!.centerY).toBe(70);expect(geometry.segments[0]!.startX).toBe(110);expect(geometry.segments[0]!.endX).toBe(145);expect(geometry.segments[1]!.endX).toBe(245)});
  test("rests interrupt ribbons and final notes extrapolate locally",()=>{const geometry=buildTimelineGeometry(events,sounds,anchors);expect(geometry.segments.some(segment=>segment.writtenEventId==="r")).toBe(false);expect(geometry.segments[2]!.endX).toBeGreaterThan(geometry.segments[2]!.startX+20)});
 });
