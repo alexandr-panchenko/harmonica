@@ -43,7 +43,6 @@ await shot("song-wait-dark-desktop.png", "dark", openSongMode);
 await shot("song-wait-light-phone.png", "light", openSongMode, true);
 await shot("song-wait-dark-phone.png", "dark", openSongMode, true);
 await shot("song-in-time-light-desktop.png", "light",async page=>{await openSongMode(page);await page.getByRole("button",{name:"In time"}).click()});
-await shot("song-score-light-desktop.png", "light",async page=>{await openSongMode(page);await page.getByRole("button",{name:"Score",exact:true}).click()});
 await shot("song-playhead-middle-light-desktop.png","light",async page=>{await openSongMode(page);await seekSong(page,4)});
 await shot("song-policy-keep-light-desktop.png","light",page=>policyState(page,"pause"));
 await shot("song-policy-restart-note-light-desktop.png","light",page=>policyState(page,"restart-note"));

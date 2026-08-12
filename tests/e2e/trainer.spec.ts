@@ -215,7 +215,7 @@ test("score library and duration notation remain intact", async ({ page }) => {
   expect(await page.locator(".music-ribbon").count()).toBeGreaterThan(4);
 });
 
-test("notation sizing follows the viewport and Score wraps instead of scaling down", async ({ page }, testInfo) => {
+test("notation sizing follows the viewport with one visible Timeline layout", async ({ page }, testInfo) => {
   await page.goto("./");
   await openMode(page, "Find a note");
   const find = await musicMetrics(page);
@@ -227,42 +227,37 @@ test("notation sizing follows the viewport and Score wraps instead of scaling do
   await openMode(page, "Practice a song");
   const timeline = await musicMetrics(page);
   if (testInfo.project.name === "mobile") expect(timeline.scrollWidth).toBeGreaterThan(timeline.clientWidth);
-  await page.getByRole("button", { name: "Score", exact: true }).click({force:true});
-  const score = await musicMetrics(page);
-  expect(score.scrollWidth).toBeLessThanOrEqual(score.clientWidth + 1);
-  expect(Math.abs(score.svgWidth - score.clientWidth)).toBeLessThanOrEqual(2);
-  expect(score.noteWidth).toBeGreaterThanOrEqual(10);
-  expect(score.stageHeight).toBeLessThan(360);
-  if (testInfo.project.name === "mobile") expect(score.systems).toBeGreaterThanOrEqual(1);
+  expect(timeline.scrollWidth).toBeGreaterThanOrEqual(timeline.clientWidth - 1);
+  expect(timeline.noteWidth).toBeGreaterThanOrEqual(10);
+  expect(timeline.stageHeight).toBeLessThan(360);
+  await expect(page.getByRole("group", { name: "Staff display" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Score", exact: true })).toHaveCount(0);
 });
 
-test("Score remains readable in every mode where it is available", async ({ page }) => {
+test("Timeline remains readable in every notation practice mode", async ({ page }) => {
   const contexts = ["Practice a song", "Rhythm training", "Play by ear"];
   for (const name of contexts) {
     await page.goto("./");
     await openMode(page, name);
-    await page.getByRole("button", { name: "Score", exact: true }).click({force:true});
     if (name === "Play by ear") await page.getByRole("button", { name: "Reveal", exact: true }).click();
     const metrics = await musicMetrics(page);
-    expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
-    expect(Math.abs(metrics.svgWidth - metrics.clientWidth)).toBeLessThanOrEqual(2);
+    expect(metrics.scrollWidth).toBeGreaterThanOrEqual(metrics.clientWidth - 1);
     expect(metrics.noteWidth).toBeGreaterThanOrEqual(10);
     expect(metrics.systems).toBeGreaterThanOrEqual(1);
+    await expect(page.getByRole("button", { name: "Score", exact: true })).toHaveCount(0);
   }
 });
 
-test("long Score documents scroll vertically without horizontal overflow", async ({ page }) => {
+test("long Timeline documents retain one horizontal duration axis", async ({ page }) => {
   await page.goto("./");
   await page.getByRole("button", { name: /Practice a song/ }).click();
   await page.getByText("Import ABC", { exact: true }).click();
   const body = Array.from({ length: 32 }, () => "C D E F |").join(" ");
   await page.getByLabel("ABC notation").fill(`X:9\nT:Long layout check\nM:4/4\nL:1/4\nQ:1/4=100\nK:C\n${body}`);
   await page.getByRole("button", { name: "Open imported score" }).click();
-  await page.getByRole("button", { name: "Score", exact: true }).click({force:true});
   const metrics = await musicMetrics(page);
-  expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
-  expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
-  expect(metrics.systems).toBeGreaterThanOrEqual(8);
+  expect(metrics.scrollWidth).toBeGreaterThan(metrics.clientWidth);
+  expect(metrics.systems).toBe(1);
 });
 
 test("timeline ribbons share notehead coordinates and fill measured intervals after resize", async ({ page }) => {
@@ -290,14 +285,11 @@ test("timeline ribbons share notehead coordinates and fill measured intervals af
   expect(Math.max(...resized.map(value => value.y))).toBeLessThanOrEqual(1.5);
 });
 
-test("staff mode persists and hidden ear events leak no engraved pitch", async ({ page }) => {
+test("hidden ear events leak no engraved pitch and expose no fake Score mode", async ({ page }) => {
   await page.goto("./");
-  await openMode(page,"Practice a song");
-  await page.getByRole("button",{name:"Score",exact:true}).click({force:true});
-  await expect(page.getByRole("button",{name:"Score",exact:true})).toHaveAttribute("aria-pressed","true");
-  await page.reload();
   await openMode(page,"Play by ear");
-  await expect(page.getByRole("button",{name:"Score",exact:true})).toHaveAttribute("aria-pressed","true");
+  await expect(page.getByRole("button",{name:"Score",exact:true})).toHaveCount(0);
+  await expect(page.getByRole("group",{name:"Staff display"})).toHaveCount(0);
   await expect(page.locator(".abc-production-render .music-hidden")).toHaveCount(4);
   await expect(page.locator(".abc-production-render .music-hidden").first()).toHaveCSS("visibility","hidden");
   await expect(page.locator(".hidden-pitch-marker")).toHaveCount(4);
@@ -347,6 +339,17 @@ test("mobile keeps the two-row model and scrolls instead of shrinking labels", a
   const quadrant = await page.locator(".interactive-hole button").first().boundingBox();
   expect(quadrant!.width).toBeGreaterThanOrEqual(25);
   expect(quadrant!.height).toBeGreaterThanOrEqual(25);
+});
+
+test("Touch harmonica is centered whenever the full instrument fits", async ({ page }) => {
+  await page.goto("./");
+  await openMode(page, "Find a note");
+  await page.getByRole("button", { name: "Touch · alternative" }).click();
+  for (const holes of [10,12]) {
+    await page.getByRole("button", { name: `Instrument: ${holes} holes` }).click();
+    const geometry=await page.locator(".interactive-scroll").evaluate(root=>{const instrument=root.querySelector<HTMLElement>(".product-harmonica")!,viewport=root.getBoundingClientRect(),body=instrument.getBoundingClientRect();return{fits:root.scrollWidth<=root.clientWidth+1,centerDelta:Math.abs((body.left+body.width/2)-(viewport.left+viewport.width/2))}});
+    if(geometry.fits)expect(geometry.centerDelta).toBeLessThanOrEqual(1);
+  }
 });
 
 test("microphone mode keeps compact instrument without touch quadrants", async ({ page }) => {
