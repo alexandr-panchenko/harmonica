@@ -210,9 +210,10 @@ test("score library and duration notation remain intact", async ({ page }) => {
   await expect(page.locator(".song-card small")).toHaveCount(0);
   await expect(page.locator(".song-grid")).not.toContainText(/BPM|notes/);
   await expect(page.locator(".import-source")).toBeVisible();
-  await page.getByRole("button", { name: /Twinkle Twinkle/ }).click();
-  expect(await page.locator(".abcjs-note").count()).toBeGreaterThan(3);
-  expect(await page.locator(".music-ribbon").count()).toBeGreaterThan(4);
+  await page.getByRole("button", { name: /The Pink Panther Theme/ }).click();
+  await expect(page.getByRole("button", { name: /The Pink Panther Theme/ })).toBeVisible();
+  expect(await page.locator(".abcjs-note").count()).toBeGreaterThan(100);
+  expect(await page.locator(".music-ribbon").count()).toBeGreaterThan(100);
 });
 
 test("Find and Rhythm each group their setup into one compact control dock", async ({ page }) => {

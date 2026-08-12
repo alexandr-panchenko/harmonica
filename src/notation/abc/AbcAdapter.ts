@@ -18,7 +18,7 @@ export interface RenderAnchor {
 }
 
 interface InternalPitch { pitch: number; name: string; accidental?: "sharp"|"flat"|"natural"|"dblsharp"|"dblflat"; startTie?: object; endTie?: boolean }
-interface InternalItem { el_type: string; duration?: number; pitches?: InternalPitch[]; rest?: object; startChar?: number; endChar?: number }
+interface InternalItem { el_type: string; duration?: number; pitches?: InternalPitch[]; rest?: object; startChar?: number; endChar?: number; startTriplet?: number; tripletMultiplier?: number; endTriplet?: boolean }
 interface InternalStaff { voices?: InternalItem[][]; key?: { accidentals?: { acc: "sharp"|"flat"|"natural"; note: string }[] } }
 interface InternalTune { lines: { staff?: InternalStaff[] }[]; metaText?: { title?: string; tempo?: { bpm?: number } }; warnings?: string[]; getMeterFraction(): {num:number;den:number}; getPickupLength(): number }
 interface RenderedTuneBoundary { getSelectableArray(): { absEl: { type: string; abcelem: { startChar?: number } }; svgEl: SVGElement }[] }
@@ -34,19 +34,21 @@ export function adaptAbc(source: string): AbcDocument {
   const mf=tune.getMeterFraction(), meter={numerator:Number(mf.num||4),denominator:Number(mf.den||4)};
   const first=tune.lines.find(line=>line.staff?.[0])?.staff?.[0], key=new Map<string,number>();
   for(const accidental of first?.key?.accidentals??[]) key.set(accidental.note.toUpperCase(),offset(accidental.acc));
-  const writtenEvents:WrittenMusicEvent[]=[]; let beat=0,measureIndex=0,measure=new Map<string,number>();
+  const writtenEvents:WrittenMusicEvent[]=[]; let beat=0,measureIndex=0,measure=new Map<string,number>(),tupletMultiplier=1;
   for(const line of tune.lines) for(const item of line.staff?.[0]?.voices?.[0]??[]) {
     if(item.el_type==="bar"){measureIndex++;measure=new Map();continue}
     if(item.el_type!=="note"||!item.duration) continue;
-    const durationBeats=item.duration*4, sourceRange=item.startChar!==undefined&&item.endChar!==undefined?{start:item.startChar,end:item.endChar}:undefined;
+    if(item.startTriplet)tupletMultiplier=item.tripletMultiplier??(2/item.startTriplet);
+    const durationBeats=item.duration*4*tupletMultiplier, sourceRange=item.startChar!==undefined&&item.endChar!==undefined?{start:item.startChar,end:item.endChar}:undefined;
     const pitch=item.pitches?.[0], id=`abc-${item.startChar??writtenEvents.length}`;
-    if(!pitch||item.rest){writtenEvents.push({id,kind:"rest",startBeat:beat,durationBeats,measureIndex,sourceRange});beat+=durationBeats;continue}
+    if(!pitch||item.rest){writtenEvents.push({id,kind:"rest",startBeat:beat,durationBeats,measureIndex,sourceRange});beat+=durationBeats;if(item.endTriplet)tupletMultiplier=1;continue}
     const value=identity(pitch.pitch), accidentalKey=`${value.step}${value.octave}`;
     if(pitch.accidental) measure.set(accidentalKey,offset(pitch.accidental));
     const accidentalOffset=pitch.accidental?offset(pitch.accidental):(measure.get(accidentalKey)??key.get(value.step)??0);
     const tie=pitch.startTie&&pitch.endTie?"continue":pitch.startTie?"start":pitch.endTie?"end":undefined;
     writtenEvents.push({id,kind:"note",writtenPitch:{step:value.step,octave:value.octave,accidental:pitch.accidental==="sharp"?"sharp":pitch.accidental==="flat"?"flat":pitch.accidental==="natural"?"natural":undefined},midi:12*(value.octave+1)+SEMITONES[value.stepIndex]!+accidentalOffset,startBeat:beat,durationBeats,measureIndex,tie,sourceRange});
     beat+=durationBeats;
+    if(item.endTriplet)tupletMultiplier=1;
   }
   const soundingEvents:SoundEvent[]=[]; let open:SoundEvent|undefined;
   for(const event of writtenEvents){

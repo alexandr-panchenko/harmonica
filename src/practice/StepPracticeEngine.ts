@@ -43,7 +43,8 @@ export class StepPracticeEngine {
     const event = this.events[this.state.activeEventIndex]!;
     const nextIndex = this.state.activeEventIndex + 1;
     const next = this.events[nextIndex];
-    const repeated = stillSounding && event.kind === "note" && next?.kind === "note" && event.midi === next.midi;
+    const tied = (event.tie === "start" || event.tie === "continue") && (next?.tie === "continue" || next?.tie === "end");
+    const repeated = stillSounding && !tied && event.kind === "note" && next?.kind === "note" && event.midi === next.midi;
     this.state = {
       activeEventIndex: Math.min(nextIndex, this.events.length - 1),
       heldBeats: 0,

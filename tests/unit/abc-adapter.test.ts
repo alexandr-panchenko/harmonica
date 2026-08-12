@@ -35,4 +35,10 @@ describe("production abcjs boundary", () => {
     expect(tied[0]).toMatchObject({ durationBeats: 4 });
     expect(tied[0]!.writtenEventIds).toHaveLength(2);
   });
+
+  test("applies engraved tuplet timing to canonical events", () => {
+    const document = adaptAbc("X:9\nM:4/4\nL:1/16\nK:C\n(3C2 D2 E2 z12 |");
+    expect(document.writtenEvents.map((event) => event.durationBeats)).toEqual([1/3, 1/3, 1/3, 3]);
+    expect(document.totalBeats).toBe(4);
+  });
 });
