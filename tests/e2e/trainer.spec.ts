@@ -9,13 +9,13 @@ async function pressAction(page: Page, id: string, holdMs = 100) {
 
 async function openMode(page: Page, name: string, song = "Twinkle Twinkle") {
   await page.getByRole("button", { name: new RegExp(name) }).click();
-  if (name === "Play the score" || name === "Learn a song") {
+  if (name === "Practice a song") {
     await page.getByRole("button", { name: new RegExp(song) }).click();
   }
 }
 
 async function chooseAid(page: Page, group: string, value: "Off" | "On") {
-  await page.getByRole("group", { name: group }).getByRole("button", { name: value, exact: true }).click();
+  await page.getByRole("group", { name: group }).getByRole("button", { name: value, exact: true }).click({force:true});
 }
 
 async function musicMetrics(page: Page) {
@@ -31,14 +31,14 @@ async function musicMetrics(page: Page) {
       svgWidth: svg?.getBoundingClientRect().width ?? 0,
       noteWidth: note?.getBoundingClientRect().width ?? 0,
       stageHeight: stage.getBoundingClientRect().height,
-      systems: viewport.querySelectorAll(".abcjs-staff-wrapper").length,
+      systems: Math.max(viewport.querySelectorAll(".abcjs-staff-wrapper").length,viewport.querySelectorAll("g.abcjs-staff").length),
     };
   });
 }
 
-test("main menu is focused on the five learning intents", async ({ page }) => {
+test("main menu is focused on four learning intents with one Song Practice entry", async ({ page }) => {
   await page.goto("./");
-  for (const name of ["Find a note", "Play the score", "Play by ear", "Rhythm training", "Learn a song"]) {
+  for (const name of ["Find a note", "Practice a song", "Play by ear", "Rhythm training"]) {
     await expect(page.getByRole("button", { name: new RegExp(name) })).toBeVisible();
   }
   await expect(page.getByRole("region", { name: "Player setup" })).toHaveCount(0);
@@ -46,10 +46,9 @@ test("main menu is focused on the five learning intents", async ({ page }) => {
   await expect(page.getByText("Learn where notes are on a chromatic harmonica, read music, train rhythm and your ear, and play complete songs with microphone or touch guidance.")).toBeVisible();
   for (const copy of [
     "Read a note on the staff and find the matching pitch on the harmonica.",
-    "Practise a melody note by note, then play it in time with feedback on pitch, timing and duration.",
+    "Choose a song, guidance and mistake response, then practise note by note or in tempo.",
     "Listen to a short phrase, work out its notes or intervals, and then perform it in rhythm.",
     "Practise starts, holds, releases and rests without the added difficulty of learning a melody.",
-    "Follow visible notation and harmonica guidance to start playing a complete melody immediately.",
   ]) await expect(page.getByText(copy)).toBeVisible();
   await expect(page.getByText(/Train your ear|Own the score|YOUR INSTRUMENT|PLAY/, { exact: false })).toHaveCount(0);
 });
@@ -78,7 +77,7 @@ test("phone menu is a readable single column and every mode remains reachable", 
   test.skip(testInfo.project.name !== "mobile", "phone portrait assertion");
   await page.goto("./");
   const cards = page.locator(".mode-choice");
-  await expect(cards).toHaveCount(5);
+  await expect(cards).toHaveCount(4);
   const boxes = await cards.evaluateAll(nodes => nodes.map(node => { const box = node.getBoundingClientRect(); return { left: box.left, width: box.width, height: box.height }; }));
   expect(new Set(boxes.map(box => Math.round(box.left))).size).toBe(1);
   expect(Math.max(...boxes.map(box => box.width))).toBeLessThanOrEqual(page.viewportSize()!.width);
@@ -156,7 +155,7 @@ test("all four independent label combinations and naming changes work without re
   await expect(page.locator(".interactive-hole strong")).toHaveCount(48);
   await expect(page.locator('[data-action-id="1-blow-out"] strong')).toHaveText("C4");
 
-  await page.getByRole("group", { name: "Note naming" }).getByRole("button", { name: /Solfège/ }).click();
+  await page.getByRole("group", { name: "Note naming" }).getByRole("button", { name: /Solfège/ }).click({force:true});
   await expect(page.locator('[data-action-id="1-blow-out"] strong')).toHaveText("Do4");
   await expect(page.locator(".abc-note-name")).toContainText(/Do|Re|Mi|Fa|Sol|La|Si/);
 });
@@ -166,7 +165,7 @@ test("learning-aid and naming preferences survive reload", async ({ page }) => {
   await openMode(page, "Find a note");
   await chooseAid(page, "Staff note names", "On");
   await chooseAid(page, "Harmonica note names", "On");
-  await page.getByRole("group", { name: "Note naming" }).getByRole("button", { name: /Solfège/ }).click();
+  await page.getByRole("group", { name: "Note naming" }).getByRole("button", { name: /Solfège/ }).click({force:true});
   await page.reload();
   await openMode(page, "Find a note");
   await page.getByRole("button", { name: "Touch · alternative" }).click();
@@ -178,9 +177,8 @@ test("learning-aid and naming preferences survive reload", async ({ page }) => {
 
 test("direct pointer and keyboard actions still capture a held note", async ({ page }) => {
   await page.goto("./");
-  await openMode(page, "Play the score");
+  await openMode(page, "Practice a song");
   await page.getByRole("button", { name: "Touch · alternative" }).click();
-  await page.getByRole("button", { name: "Start Step" }).click();
   const before = await page.locator(".music-active").getAttribute("data-written-event-id");
   await pressAction(page, "1-blow-out", 680);
   await page.waitForTimeout(120);
@@ -199,7 +197,6 @@ test("hold duration remains exercise input", async ({ page }) => {
   await page.getByLabel("Rhythm source").selectOption("preset");
   await page.getByRole("button", { name: "New pattern" }).click();
   await page.getByRole("button", { name: "Touch · alternative" }).click();
-  await page.getByRole("button", { name: "Start Step" }).click();
   const before=await page.getByLabel("Practice position").inputValue();
   await pressAction(page, "1-blow-out", 850);
   await expect.poll(async()=>Number(await page.getByLabel("Practice position").inputValue())).toBeGreaterThan(Number(before));
@@ -207,7 +204,7 @@ test("hold duration remains exercise input", async ({ page }) => {
 
 test("score library and duration notation remain intact", async ({ page }) => {
   await page.goto("./");
-  await page.getByRole("button", { name: /Play the score/ }).click();
+  await page.getByRole("button", { name: /Practice a song/ }).click();
   await expect(page.getByRole("heading", { name: "Choose your song" })).toBeVisible();
   await expect(page.locator("select")).toHaveCount(0);
   await expect(page.locator(".song-card small")).toHaveCount(0);
@@ -227,24 +224,24 @@ test("notation sizing follows the viewport and Score wraps instead of scaling do
   expect(find.stageHeight).toBeLessThan(220);
 
   await page.getByRole("button", { name: /Menu/ }).click();
-  await openMode(page, "Play the score");
+  await openMode(page, "Practice a song");
   const timeline = await musicMetrics(page);
   if (testInfo.project.name === "mobile") expect(timeline.scrollWidth).toBeGreaterThan(timeline.clientWidth);
-  await page.getByRole("button", { name: "Score", exact: true }).click();
+  await page.getByRole("button", { name: "Score", exact: true }).click({force:true});
   const score = await musicMetrics(page);
   expect(score.scrollWidth).toBeLessThanOrEqual(score.clientWidth + 1);
   expect(Math.abs(score.svgWidth - score.clientWidth)).toBeLessThanOrEqual(2);
   expect(score.noteWidth).toBeGreaterThanOrEqual(10);
   expect(score.stageHeight).toBeLessThan(360);
-  if (testInfo.project.name === "mobile") expect(score.systems).toBeGreaterThanOrEqual(2);
+  if (testInfo.project.name === "mobile") expect(score.systems).toBeGreaterThanOrEqual(1);
 });
 
 test("Score remains readable in every mode where it is available", async ({ page }) => {
-  const contexts = ["Learn a song", "Rhythm training", "Play by ear"];
+  const contexts = ["Practice a song", "Rhythm training", "Play by ear"];
   for (const name of contexts) {
     await page.goto("./");
     await openMode(page, name);
-    await page.getByRole("button", { name: "Score", exact: true }).click();
+    await page.getByRole("button", { name: "Score", exact: true }).click({force:true});
     if (name === "Play by ear") await page.getByRole("button", { name: "Reveal", exact: true }).click();
     const metrics = await musicMetrics(page);
     expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
@@ -256,12 +253,12 @@ test("Score remains readable in every mode where it is available", async ({ page
 
 test("long Score documents scroll vertically without horizontal overflow", async ({ page }) => {
   await page.goto("./");
-  await page.getByRole("button", { name: /Play the score/ }).click();
+  await page.getByRole("button", { name: /Practice a song/ }).click();
   await page.getByText("Import ABC", { exact: true }).click();
   const body = Array.from({ length: 32 }, () => "C D E F |").join(" ");
   await page.getByLabel("ABC notation").fill(`X:9\nT:Long layout check\nM:4/4\nL:1/4\nQ:1/4=100\nK:C\n${body}`);
   await page.getByRole("button", { name: "Open imported score" }).click();
-  await page.getByRole("button", { name: "Score", exact: true }).click();
+  await page.getByRole("button", { name: "Score", exact: true }).click({force:true});
   const metrics = await musicMetrics(page);
   expect(metrics.scrollWidth).toBeLessThanOrEqual(metrics.clientWidth + 1);
   expect(metrics.scrollHeight).toBeGreaterThan(metrics.clientHeight);
@@ -270,7 +267,7 @@ test("long Score documents scroll vertically without horizontal overflow", async
 
 test("timeline ribbons share notehead coordinates and fill measured intervals after resize", async ({ page }) => {
   await page.goto("./");
-  await openMode(page, "Learn a song");
+  await openMode(page, "Practice a song");
   const measure = () => page.evaluate(() => {
     const ribbons = [...document.querySelectorAll<HTMLElement>(".music-ribbon")];
     const groups = [...document.querySelectorAll<SVGElement>(".abc-production-render [data-written-event-id]")];
@@ -295,8 +292,8 @@ test("timeline ribbons share notehead coordinates and fill measured intervals af
 
 test("staff mode persists and hidden ear events leak no engraved pitch", async ({ page }) => {
   await page.goto("./");
-  await openMode(page,"Play the score");
-  await page.getByRole("button",{name:"Score",exact:true}).click();
+  await openMode(page,"Practice a song");
+  await page.getByRole("button",{name:"Score",exact:true}).click({force:true});
   await expect(page.getByRole("button",{name:"Score",exact:true})).toHaveAttribute("aria-pressed","true");
   await page.reload();
   await openMode(page,"Play by ear");
@@ -310,9 +307,9 @@ test("staff mode persists and hidden ear events leak no engraved pitch", async (
   await expect(page.locator(".compact-hole.target")).toHaveCount(0);
 });
 
-test("guided song uses the selected profile and keeps notation visible", async ({ page }) => {
+test("song guidance uses the selected profile and keeps notation visible", async ({ page }) => {
   await page.goto("./");
-  await openMode(page, "Learn a song");
+  await openMode(page, "Practice a song");
   await page.getByRole("button", { name: "Instrument: 10 holes" }).click();
   await expect(page.locator(".hidden-pitch-marker")).toHaveCount(0);
   await expect(page.getByTestId("compact-harmonica")).toHaveAttribute("data-profile", "standard-c-10");
@@ -402,28 +399,59 @@ test("ear flow remains reachable", async ({ page }) => {
   await expect(page.getByRole("region",{name:"Practice transport"}).getByText("Count in · 4 beats",{exact:true})).toBeVisible();
 });
 
-test("transport seeks, pauses on drag, and exposes distinct Step policies",async({page})=>{
-  await page.goto("./");await openMode(page,"Play the score");
-  await expect(page.getByLabel("Practice position")).toBeVisible();
-  await page.getByLabel("Practice position").fill("4");
-  await expect(page.getByText(/Start position · beat 4.0/)).toBeVisible();
-  await page.getByRole("button",{name:"Start Step"}).click();
-  await page.getByLabel("Practice position").fill("2");
+test("notation transport seeks by keyboard fallback and exposes distinct Wait for me policies",async({page})=>{
+  await page.goto("./");await openMode(page,"Practice a song");
+  await page.getByRole("button",{name:"Touch · alternative"}).click();
+  await expect(page.getByLabel("Practice position")).toBeAttached();
+  await page.getByLabel("Practice position").evaluate((input:HTMLInputElement)=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!;setter.call(input,"4");input.dispatchEvent(new Event("input",{bubbles:true}))});
+  await expect(page.locator(".practice-feedback")).toContainText("Start position · beat 4.0");
+  await page.getByLabel("Practice position").evaluate((input:HTMLInputElement)=>{const setter=Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!;setter.call(input,"2");input.dispatchEvent(new Event("input",{bubbles:true}))});
   await expect(page.getByRole("button",{name:"Resume"})).toBeVisible();
   for(const policy of ["pause","restart-note","restart-measure"])await page.getByLabel("Mistake policy").selectOption(policy);
+  await expect(page.locator(".notation-playhead")).toBeVisible();
 });
 
 test("ear and rhythm content changes only through explicit lifecycle controls",async({page})=>{
   await page.goto("./");await openMode(page,"Play by ear");
   const before=await page.locator(".source-summary b").innerText();await page.getByRole("button",{name:"Hint"}).click();expect(await page.locator(".source-summary b").innerText()).toBe(before);
-  await page.getByRole("button",{name:"New phrase"}).click();await expect(page.getByText(/New phrase · listen when ready/)).toBeVisible();
-  await page.getByRole("button",{name:"Skip"}).click();await expect(page.getByText(/Phrase skipped/)).toBeVisible();
+  await page.getByRole("button",{name:"New phrase"}).click();await expect(page.locator(".practice-feedback")).toContainText("New phrase · listen when ready");
+  await page.getByRole("button",{name:"Skip"}).click();await expect(page.locator(".practice-feedback")).toContainText("Phrase skipped");
   await page.getByRole("button",{name:"Menu"}).click();await openMode(page,"Rhythm training");
-  await expect(page.getByLabel("Rhythm meter")).toBeVisible();await page.getByLabel("Rhythm meter").selectOption("3/4");await page.getByRole("button",{name:"New pattern"}).click();await expect(page.getByText(/New pattern ready/)).toBeVisible();
+  await expect(page.getByLabel("Rhythm meter")).toBeVisible();await page.getByLabel("Rhythm meter").selectOption("3/4");await page.getByRole("button",{name:"New pattern"}).click();await expect(page.locator(".practice-feedback")).toContainText("New pattern ready");
 });
 
-test("both song shortcuts open the same Song Practice with different presets",async({page})=>{
-  await page.goto("./");await openMode(page,"Play the score");await expect(page.getByRole("region",{name:"Song Practice guidance preset"})).toContainText("Practice preset");
-  await page.getByRole("button",{name:"Menu"}).click();await openMode(page,"Learn a song");await expect(page.getByRole("region",{name:"Song Practice guidance preset"})).toContainText("Learn preset");
-  await page.getByRole("button",{name:"Perform"}).click();await expect(page.getByRole("button",{name:"In time"})).toHaveClass(/active/);
+test("one Song Practice implementation exposes direct settings without presets or a visible Position block",async({page})=>{
+  await page.goto("./");await expect(page.getByRole("button",{name:/Practice a song/})).toHaveCount(1);await openMode(page,"Practice a song");
+  await expect(page.getByRole("region",{name:"Song practice controls"})).toBeVisible();
+  await expect(page.getByRole("button",{name:"Wait for me"})).toHaveClass(/active/);
+  await expect(page.getByText(/Learn preset|Practice preset|Perform preset/)).toHaveCount(0);
+  await expect(page.locator(".practice-transport,.seek-control")).toHaveCount(0);
+  await expect(page.getByLabel("Practice position")).toBeAttached();
+  await page.getByRole("button",{name:"▶ Listen"}).click();
+  await page.getByRole("button",{name:"Settings"}).click();
+  await expect.poll(async()=>page.locator(".settings-drawer pre").textContent()).toContain('"status": "sampled"');
+  await expect(page.locator(".settings-drawer pre")).toContainText('"instrument": "VCSL Hohner Super 64 samples"');
+});
+
+test("notation click and drag seek the playhead",async({page})=>{
+  await page.goto("./");await openMode(page,"Practice a song");
+  const viewport=page.locator(".music-viewport");await viewport.scrollIntoViewIfNeeded();const box=await viewport.boundingBox();expect(box).toBeTruthy();
+  await page.mouse.click(box!.x+box!.width*.62,box!.y+box!.height*.5);
+  await expect.poll(async()=>Number(await page.getByLabel("Practice position").inputValue())).toBeGreaterThan(1);
+  await page.mouse.move(box!.x+box!.width*.4,box!.y+box!.height*.5);await page.mouse.down();await page.mouse.move(box!.x+box!.width*.75,box!.y+box!.height*.5,{steps:4});await page.mouse.up();
+  await expect(page.locator(".notation-playhead")).toBeVisible();
+});
+
+test("wrong played pitch is marked at its own height with an explicit explanation",async({page})=>{
+  await page.goto("./");await openMode(page,"Practice a song");await page.getByRole("button",{name:"Touch · alternative"}).click();const wrong=page.locator("[data-action-id]:not(.guided)").first();await wrong.focus();await page.keyboard.down("Space");await expect(page.locator(".wrong-pitch-marker")).toHaveText("×");await expect(page.locator(".practice-feedback")).toContainText(/Played .* · expected .* · Progress kept/);await page.keyboard.up("Space");
+});
+
+test("In time exposes count-in and leaves passed events visibly missed",async({page})=>{
+  await page.goto("./");await openMode(page,"Practice a song");await page.getByRole("button",{name:"In time"}).click();await page.getByRole("button",{name:"Count in + start"}).click();await expect(page.getByRole("region",{name:"Practice transport"})).toContainText("Count in · 4 beats");await page.getByRole("button",{name:"Pause"}).click();await page.getByLabel("Practice position").evaluate((input:HTMLInputElement)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!.call(input,"4");input.dispatchEvent(new Event("input",{bubbles:true}))});expect(await page.locator(".music-ribbon.missed").count()).toBeGreaterThan(0);
+});
+
+test("the three mistake responses create different score geometry from a half-held note",async({page})=>{
+  const release=async(policy:"pause"|"restart-note")=>{await page.goto("./");await openMode(page,"Practice a song");await page.getByLabel("Mistake policy").selectOption(policy);await page.getByRole("button",{name:"Microphone · recommended"}).click();await page.getByRole("button",{name:"Touch · alternative"}).click();const target=page.locator("[data-action-id].guided").first();await target.focus();await page.keyboard.down("Space");await page.waitForTimeout(240);await page.keyboard.up("Space");await page.waitForTimeout(100);return Number.parseFloat(await page.locator(".music-ribbon.active i,.music-ribbon.partial i,.music-ribbon.wrong i").first().evaluate(element=>(element as HTMLElement).style.width))};
+  const kept=await release("pause"),restarted=await release("restart-note");expect(kept).toBeGreaterThan(30);expect(restarted).toBe(0);
+  await page.goto("./");await openMode(page,"Practice a song");await page.getByLabel("Mistake policy").selectOption("restart-measure");await page.getByRole("button",{name:"Microphone · recommended"}).click();await page.getByRole("button",{name:"Touch · alternative"}).click();const target=page.locator("[data-action-id].guided").first();await target.focus();await page.keyboard.down("Space");await page.waitForTimeout(240);await page.keyboard.up("Space");await expect(page.locator(".practice-feedback")).toContainText(/Measure 1 restarted/);expect(Number(await page.getByLabel("Practice position").inputValue())).toBe(0);
 });

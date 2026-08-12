@@ -22,10 +22,9 @@ Separate laboratory pages are not an acceptable deliverable for the active task.
 ## Current product map
 
 - **Find a note:** randomized staff-to-instrument training with configurable range and chromatic content.
-- **Play the score:** shared Song Practice in the Practice preset, with Step/In time transport and seek.
+- **Practice a song:** one compact Song Practice workspace with Wait for me/In time, direct guidance and mistake settings, and notation-integrated seek.
 - **Play by ear:** explicit random/song-excerpt lifecycle, relative/absolute discovery and optional realtime performance.
 - **Rhythm training:** explicit generated/preset patterns with configurable meter, measures, difficulty and pitch policy.
-- **Learn a song:** the same Song Practice implementation in its Learn preset.
 - **Microphone:** separate raw/candidate/display/accepted/completed state, dB hysteresis and persisted sensitivity.
 - **Touch:** direct virtual harmonica input.
 - **Profiles:** explicit 10-hole and 12-hole C chromatic mappings.

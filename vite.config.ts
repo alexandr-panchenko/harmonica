@@ -22,6 +22,6 @@ export default defineConfig({
     rollupOptions: { output: { assetFileNames: "assets/[name]-[hash][extname]" } },
   },
   // Generated alongside the exact bundle, never hand-maintained.
-  publicDir: false,
+  publicDir: "public",
   plugins: [react(), { name: "build-identity", generateBundle() { this.emitFile({ type: "asset", fileName: "build-meta.json", source: JSON.stringify(buildMeta, null, 2) + "\n" }); } }],
 });

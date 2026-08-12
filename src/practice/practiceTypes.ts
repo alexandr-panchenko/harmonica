@@ -20,6 +20,7 @@ export interface StepPracticeState {
   completedEventIds: string[];
   awaitingRearticulation: boolean;
   feedback: "ready" | "correct" | "wrong" | "release" | "complete";
+  lastMistakeAction?: "kept" | "note-restarted" | "measure-restarted";
 }
 
 export interface PracticeSignal {

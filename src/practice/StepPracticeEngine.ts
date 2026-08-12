@@ -54,12 +54,13 @@ export class StepPracticeEngine {
   }
 
   private applyMistake(feedback: "wrong" | "release"): void {
-    if (this.policy === "pause") this.state = { ...this.state, feedback };
-    else if (this.policy === "restart-note") this.state = { ...this.state, heldBeats: 0, feedback };
+    if (this.policy === "pause") this.state = { ...this.state, feedback, lastMistakeAction:"kept" };
+    else if (this.policy === "restart-note") this.state = { ...this.state, heldBeats: 0, feedback, lastMistakeAction:"note-restarted" };
     else {
       const measure = this.events[this.state.activeEventIndex]?.measureIndex ?? 0;
       const measureStart = Math.max(0, this.events.findIndex(event => event.measureIndex === measure));
-      this.state = { ...this.state, activeEventIndex: measureStart, heldBeats: 0, feedback };
+      const idsInMeasure=new Set(this.events.filter(event=>event.measureIndex===measure).map(event=>event.id));
+      this.state = { ...this.state, activeEventIndex: measureStart, heldBeats: 0, completedEventIds:this.state.completedEventIds.filter(id=>!idsInMeasure.has(id)), feedback, lastMistakeAction:"measure-restarted" };
     }
   }
 }
