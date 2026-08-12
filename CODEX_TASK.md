@@ -1,161 +1,133 @@
-# Active Codex task — restore microphone reliability and make practice modes explicit
+# Active Codex task — compact the practice workspace and integrate transport with notation
 
 Execute this task autonomously from the latest `main` in the local VS Code/Codex environment.
 
 Read completely before editing:
 
-1. [`docs/functional-practice-spec.md`](docs/functional-practice-spec.md) — binding product, architecture and acceptance specification;
-2. [`docs/architecture.md`](docs/architecture.md);
-3. [`docs/audio-pipeline.md`](docs/audio-pipeline.md);
+1. [`docs/practice-workspace-redesign-spec.md`](docs/practice-workspace-redesign-spec.md) — binding product/design/acceptance specification;
+2. [`docs/functional-practice-spec.md`](docs/functional-practice-spec.md) — existing microphone and practice semantics that must be preserved;
+3. [`docs/architecture.md`](docs/architecture.md);
 4. [`README.md`](README.md);
-5. current production audio, exercise, notation, harmonica, application, tests and deployment files.
+5. current application, practice, notation, song-practice, playback, styles, tests and deployment files.
 
-The visual-system and notation-layout iterations are closed for now. This is a functional hardening and practice-engine iteration.
+The microphone/transport functional iteration is complete enough for owner testing. This iteration fixes the practice-screen product design and makes that behavior visually understandable.
 
 ---
 
 ## Mission
 
-Deliver a deployed release candidate that:
+Deliver a deployed production release that:
 
-- recognizes real harmonica notes reliably at ordinary soft/medium playing volume;
-- keeps live tuner/staff/harmonica feedback stable through brief estimator dropouts;
-- never pretends the microphone inferred a unique hole, breath or slide technique;
-- accepts pitch-only answers live without waiting for note release;
-- gives score/song/rhythm practice an explicit transport, seek bar and unambiguous Step versus In time behavior;
-- restores visible target-duration progress;
-- provides explicit Random phrase and Song excerpt lifecycle in Play by ear;
-- provides generated/preset pattern lifecycle in Rhythm training;
-- consolidates Play the score and Learn a song onto one shared Song Practice implementation with different visible presets;
-- preserves the authoritative GitHub Actions Pages deployment and build identity.
+- replaces the stack of sparse full-width control strips with one compact, logically grouped practice workspace;
+- consolidates Play the score and Learn a song into one Song Practice mode;
+- removes Learn / Practice / Perform presets and exposes their effects as direct settings;
+- renames Step to Wait for me and removes the unnecessary Start Step gate once input is ready;
+- moves transport position and seeking onto the notation itself;
+- gives correct, wrong, partial, missed and reset states explicit feedback on the score;
+- makes Keep progress, Restart note and Restart measure visibly and behaviorally different;
+- restores and proves sampled-harmonica playback instead of silently falling back to an oscillator;
+- applies compact control-dock primitives to Find, Ear and Rhythm without changing their exercise lifecycle;
+- preserves the authoritative GitHub Actions Pages deployment and exact build identity.
 
-Do not deliver another laboratory page. The live main application is the acceptance surface.
+Do not create laboratory routes. The live application is the acceptance surface.
 
 ---
 
-## Required implementation sequence
+## Required implementation order
 
-### 1. Establish the functional baseline
+### 1. Establish baseline
 
 - fetch latest `main`;
 - record starting SHA and live `build-meta.json`;
-- run existing tests and pitch benchmark;
-- reproduce current microphone and exercise semantics from code and injected fixtures;
-- capture current production screenshots and diagnostic values;
-- do not assume passing clean-tone tests prove real-device sensitivity.
+- reproduce the current sparse Song Practice layout;
+- reproduce the current preset behavior and mistake policies;
+- inspect current `PlaybackEngine.diagnostics` and live sample URLs;
+- capture baseline desktop and phone screenshots.
 
-### 2. Refactor microphone state
+### 2. Build reusable compact workspace primitives
 
-Implement the four distinct concepts required by the specification:
+Implement the `PracticeWorkspace` / `ControlDock` style boundaries from the specification.
 
-- raw estimate;
-- candidate/display state;
-- accepted exercise state;
-- completed note segment.
+- no separate full-width card for one select or two buttons;
+- controls group by task and consequence;
+- ordinary desktop practice controls fit into at most two compact rows;
+- advanced settings move to labelled popovers/drawers;
+- music stage is the dominant surface;
+- migrate Find, Ear and Rhythm control bars to the same compact primitives without changing their functionality.
 
-Do not continue passing only `stable | null` to every consumer.
+### 3. Consolidate Song Practice
 
-Use time-based open/sustain/release hysteresis, a short display latch, robust calibration and persisted High/Normal/Low sensitivity. Add diagnostics for RMS/dB, noise floor, thresholds, clarity and gate state.
+- replace the two main-menu entries Play the score and Learn a song with one Practice a song entry;
+- use one internal mode, picker, transport and result model;
+- remove `SongPracticePresetControl`, `SongGuidancePreset` product state and preset-specific CSS;
+- expose direct controls for Wait for me / In time, guidance, Timeline / Score, mistake response and tempo;
+- preserve song library and ABC import.
 
-Pitch-only Find/Ear discovery must accept a live stable note before release. Duration-sensitive practice must consume continuous accepted time. In-time review must continue to use completed segments.
+### 4. Integrate transport into the staff
 
-### 3. Preserve honest harmonica ambiguity
+- remove the standalone visible Position range panel;
+- draw a draggable/tappable playhead directly over Timeline and Score notation;
+- implement measured beat↔point mapping in Timeline and piecewise system-aware mapping in Score;
+- clicking a note seeks to it;
+- dragging updates active event and harmonica guidance;
+- provide compact Pause/Resume/Restart or Count-in/Start controls near the staff;
+- retain an accessible keyboard/range fallback without a large visual block.
 
-For detected MIDI, highlight all matching actions. Show breath or slider state only when all candidates agree. Otherwise present multiple possible positions and neutral technique state.
+### 5. Make practice feedback explicit
 
-Do not “fix” ambiguity by choosing one physical action from audio.
+Render event states on notation:
 
-### 4. Introduce shared practice transport
+- active/partial target with duration progress;
+- correct completion with a visible check/success state;
+- wrong played pitch at its actual height with ×/error marking;
+- missed events in In time;
+- early-release point;
+- clear near-staff explanation such as played versus expected pitch and the applied policy action.
 
-Build one framework-independent transport with:
+The target must visibly stop, retain or reset progress according to the selected policy.
 
-- Step and realtime modes;
-- play/pause/restart;
-- count-in;
-- position beat/time;
-- measure/beat display;
-- draggable seek bar;
-- start from selected position;
-- deterministic clock tests.
+### 6. Correct mistake policy semantics and labels
 
-#### Step
+Use:
 
-- correct target pitch accumulates held duration;
-- wrong pitch never skips a target;
-- rests require silence;
-- repeated equal notes require rearticulation;
-- visible mistake policies:
-  - Pause and continue;
-  - Restart note;
-  - Restart measure.
+- Keep note progress;
+- Restart current note;
+- Restart current measure.
 
-#### In time
+Fix measure restart so it clears result/completion state only inside the current measure and moves the notation playhead to the measure start.
 
-- transport never pauses for mistakes;
-- inputs become match/missing/extra results;
-- live and post-run pitch/timing/duration feedback remain separate.
+Add tests that begin from approximately 50% held progress and prove all three outcomes differ in state and screenshot-visible geometry.
 
-Drive target ribbon fill from Step held progress or realtime transport. Keep played pitch trace as a distinct layer.
+Do not treat tolerated microphone dropout as a mistake.
 
-### 5. Make ear phrases explicit
+### 7. Restore sampled harmonica playback
 
-Remove fixed product behavior based on `EAR_TARGETS`.
+- inspect actual live fetch/decode/scheduling behavior;
+- preload before scheduling a melody;
+- support per-zone success/failure;
+- retry a rejected preload;
+- use the nearest decoded sample if one zone fails;
+- expose loading/sampled/degraded status;
+- show a visible retryable warning in degraded mode;
+- verify healthy reference and Touch playback use `AudioBufferSourceNode`, not `OscillatorNode`;
+- keep oscillator only as explicit degraded fallback.
 
-Provide:
+Do not replace the licensed sample set without evidence.
 
-- Random phrase;
-- Song excerpt;
-- phrase source summary;
-- Listen/Replay;
-- New phrase;
-- Skip;
-- Hint;
-- Reveal;
-- progress near the main controls;
-- Absolute and Relative behavior;
-- optional rhythm-performance stage after pitch discovery.
-
-Phrase changes only through explicit lifecycle actions.
-
-### 6. Make rhythm patterns explicit
-
-Remove fixed product behavior based on `RHYTHM_MELODY`.
-
-Provide generated and preset sources with:
-
-- New pattern;
-- meter;
-- measures;
-- difficulty;
-- allowed values/rests;
-- tempo;
-- any-pitch or fixed-pitch policy;
-- Step and In time using the shared transport.
-
-Pattern changes only through explicit lifecycle actions.
-
-### 7. Consolidate song practice
-
-Create one shared Song Practice implementation and guidance presets:
-
-- Learn;
-- Practice;
-- Perform.
-
-The existing Play the score and Learn a song menu entries may remain as shortcuts to Practice and Learn presets for this iteration. They must not maintain separate engines, song selection, transport or results logic.
-
-### 8. Remove old duplicated state
+### 8. Cleanup
 
 After parity:
 
-- remove dead fixed target/pattern constants from product behavior;
-- reduce the monolithic mode-specific state in `App.tsx`;
-- keep deterministic constants only as tests/fixtures;
-- update architecture and manual-test docs honestly.
+- remove obsolete score/guided mode branches;
+- remove preset modules and CSS;
+- remove the visible standalone position panel;
+- remove sparse full-width strip styles;
+- keep architecture out of the monolithic `App.tsx` through focused components/modules;
+- update canonical documentation honestly.
 
 ---
 
-## Verification requirements
+## Verification
 
 Run at minimum:
 
@@ -171,11 +143,22 @@ bun run test:production
 bun run capture:release
 ```
 
-Add the deterministic fixtures and assertions required by `docs/functional-practice-spec.md`, including soft tones, amplitude/clarity dropouts, vibrato, bend, repeated articulation, calibration contamination, all Step policies, seek, realtime misses, ear lifecycle, rhythm generation and shared song presets.
+Implement all focused tests and screenshot states required by `docs/practice-workspace-redesign-spec.md`, especially:
 
-Use the same production audio path for synthetic PCM, uploaded fixtures and microphone input.
+- one Song Practice entry and implementation;
+- no preset selector;
+- compact desktop/phone control hierarchy;
+- notation click/drag/keyboard seeking;
+- no standalone visible Position block;
+- Wait for me auto-armed behavior;
+- In time count-in;
+- correct/wrong/partial/missed score states;
+- exact three-policy distinction from 50% progress;
+- measure result clearing;
+- sampled playback healthy, partial-failure, retry and degraded paths;
+- live sample URLs and instrument status.
 
-Do not claim real-harmonica acceptance from synthetic tests. The final report must provide the short owner checklist from the specification.
+Perform at least one visual correction pass after opening screenshots at original size.
 
 ---
 
@@ -183,15 +166,14 @@ Do not claim real-harmonica acceptance from synthetic tests. The final report mu
 
 Do not regress:
 
-- current light/dark/system visual system;
-- production abcjs notation and responsive score/timeline layout;
-- 10-hole and 12-hole mappings;
-- compact and touch harmonica geometry;
-- sampled harmonica playback;
-- note labels and solfège;
-- song library and ABC import;
-- Pages workflow and build metadata;
-- all current modes until their behavior is migrated to the shared engines.
+- current microphone display/accepted/completed-state architecture;
+- microphone sensitivity and calibration behavior;
+- Timeline and Score engraving;
+- 10-hole/12-hole mappings and harmonica geometry;
+- Ear and Rhythm lifecycle functionality;
+- note-name and solfège settings;
+- light/dark/system themes;
+- Pages workflow and build metadata.
 
 ---
 
@@ -205,7 +187,7 @@ Do not implement:
 - community melody publishing;
 - improvisation mode;
 - graphical notation editing;
-- another general visual redesign;
+- another colour or instrument-art redesign;
 - unrelated feature expansion.
 
 ---
@@ -214,14 +196,15 @@ Do not implement:
 
 After local verification:
 
-1. update canonical documentation;
+1. update architecture, README, release and manual-test documentation;
 2. create a detailed commit;
 3. push `main`;
 4. wait for authoritative GitHub Pages deployment;
-5. verify live `build-meta.json` against final `main`;
-6. run production tests against the live URL;
-7. leave a clean worktree;
-8. report source SHA, workflow, live URL, tests, fixture results, architecture changes, known limitations and owner manual checklist;
-9. stop for owner testing with the physical harmonica.
+5. verify live `build-meta.json` equals final `main`;
+6. run live production tests;
+7. verify live sample assets and sampled-instrument status;
+8. leave a clean worktree;
+9. report final SHA, workflow, live URL, tests, screenshots, removed code and known limitations;
+10. stop for owner review.
 
-The task is complete as a release candidate only when the live application exposes stable microphone feedback, explicit transport/practice semantics, explicit ear/rhythm lifecycle and shared song-practice behavior from the reported source commit.
+The task is complete only when the live application has one compact Song Practice experience, notation-integrated transport, unmistakable practice feedback, genuinely different mistake policies and verified sampled harmonica playback.
