@@ -409,6 +409,7 @@ test("notation transport seeks by keyboard fallback and exposes distinct Wait fo
   await expect(page.getByRole("button",{name:"Resume"})).toBeVisible();
   for(const policy of ["pause","restart-note","restart-measure"])await page.getByLabel("Mistake policy").selectOption(policy);
   await expect(page.locator(".notation-playhead")).toBeVisible();
+  await expect.poll(()=>page.locator(".notation-playhead").evaluate(node=>getComputedStyle(node,"::before").content)).toBe("none");
 });
 
 test("ear and rhythm content changes only through explicit lifecycle controls",async({page})=>{
