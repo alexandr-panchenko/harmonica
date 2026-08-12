@@ -215,6 +215,22 @@ test("score library and duration notation remain intact", async ({ page }) => {
   expect(await page.locator(".music-ribbon").count()).toBeGreaterThan(4);
 });
 
+test("Find and Rhythm each group their setup into one compact control dock", async ({ page }) => {
+  await page.goto("./");
+  await openMode(page,"Find a note");
+  await expect(page.getByRole("region",{name:"Find note controls"})).toBeVisible();
+  await expect(page.locator(".control-dock")).toHaveCount(1);
+  await expect(page.locator(".find-setup,.music-controls")).toHaveCount(0);
+  await page.getByRole("button",{name:"Menu"}).click();
+  await openMode(page,"Rhythm training");
+  const dock=page.getByRole("region",{name:"Rhythm practice controls"});
+  await expect(dock).toBeVisible();
+  await expect(page.locator(".control-dock")).toHaveCount(1);
+  await expect(page.locator(".rhythm-lifecycle,.music-controls")).toHaveCount(0);
+  await expect(dock.getByRole("button",{name:"Wait for me"})).toBeVisible();
+  await expect(dock.getByLabel("Mistake policy")).toBeVisible();
+});
+
 test("notation sizing follows the viewport with one visible Timeline layout", async ({ page }, testInfo) => {
   await page.goto("./");
   await openMode(page, "Find a note");

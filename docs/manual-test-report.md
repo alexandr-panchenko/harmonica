@@ -4,7 +4,7 @@ Automated locally on 2026-08-12 with Bun 1.2.5 and repository-pinned Chromium.
 
 - Static verification: TypeScript, production build, colour contrast and the synthetic pitch benchmark pass.
 - Unit verification: 68 tests pass, including sampled-audio fallback/retry and measured notation transport geometry.
-- Browser verification: 89 applicable tests pass across desktop, Pixel 7 portrait and landscape; 4 project-specific assertions are skipped by design.
+- Browser verification: 92 applicable tests pass across desktop, Pixel 7 portrait and landscape; 4 project-specific assertions are skipped by design.
 
 - Deterministic audio covers noise rejection, soft production-path tones, dB sensitivity ordering, dropout/display latch, vibrato, semitone transition, repeated articulation and contaminated calibration.
 - Deterministic practice covers clock/count-in/pause/notation seek, all Wait for me mistake responses, exact half-held retained/reset/measure-scope results, rests and repeated-note rearticulation.
