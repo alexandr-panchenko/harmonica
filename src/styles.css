@@ -203,6 +203,9 @@ button.primary { padding: 9px 15px; border-color: var(--mode-accent); background
 .music-ribbon.upcoming { opacity: .28; }
 .music-ribbon.active { opacity: .78; box-shadow: 0 0 0 1px color-mix(in srgb, var(--mode-accent) 32%, transparent); }
 .music-ribbon.partial, .music-ribbon.correct, .music-ribbon.wrong, .music-ribbon.missed { opacity:.88; }
+.music-ribbon.preview-active { opacity:.92; box-shadow:0 0 0 1px color-mix(in srgb,var(--mode-accent) 42%,transparent); }
+.music-ribbon.preview-complete { opacity:.42; background:color-mix(in srgb,var(--text-muted) 16%,transparent); }
+.music-ribbon.preview-complete i { background:var(--text-muted); }
 .notation-playhead { position: absolute; z-index: 8; width: 2px; height: 108px; background: var(--mode-accent); pointer-events: none; transform: translateX(-1px); }.notation-playhead.paused { background: repeating-linear-gradient(var(--mode-accent) 0 5px,transparent 5px 9px); }
 .music-viewport.seekable { cursor: ew-resize; touch-action: pan-y; }
 .accessible-seek { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

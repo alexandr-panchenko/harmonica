@@ -1,11 +1,12 @@
 import {describe,expect,test} from "bun:test";
 import {PlaybackEngine} from "../../src/audio/PlaybackEngine";
 import type {Melody} from "../../src/music/melody";
+import {referencePreview} from "../../src/practice/referencePreview";
 
 function fakeAudio(){
-  const calls={buffers:0,oscillators:0,starts:[] as number[]};
+  const calls={buffers:0,oscillators:0,starts:[] as number[],stops:[] as number[]};
   const param={value:1,setValueAtTime(){},linearRampToValueAtTime(){},cancelScheduledValues(){},exponentialRampToValueAtTime(){}};
-  const source=()=>({connect(){},start(at=0){calls.starts.push(at)},stop(){},addEventListener(){}});
+  const source=()=>({connect(){},start(at=0){calls.starts.push(at)},stop(at=0){calls.stops.push(at)},addEventListener(){}});
   const context={state:"running",currentTime:2,destination:{},sampleRate:48000,baseLatency:.01,outputLatency:.02,resume:async()=>{},decodeAudioData:async()=>({duration:2}),createGain:()=>({connect(){},gain:{...param}}),createBufferSource:()=>{calls.buffers++;return{...source(),buffer:undefined,playbackRate:{value:1},loop:false,loopStart:0,loopEnd:0}},createOscillator:()=>{calls.oscillators++;return{...source(),type:"triangle",frequency:{value:0}}}};
   return{calls,context:context as unknown as AudioContext};
 }
@@ -15,4 +16,14 @@ describe("sampled playback",()=>{
   test("healthy playback uses AudioBufferSourceNode and never oscillator",async()=>{const audio=fakeAudio(),engine=new PlaybackEngine(()=>audio.context,ok);await engine.preload();await engine.noteOn("healthy",67);expect(audio.calls.buffers).toBe(1);expect(audio.calls.oscillators).toBe(0);expect(engine.diagnostics.status).toBe("sampled")});
   test("one failed zone stays degraded but uses the nearest decoded sample",async()=>{const audio=fakeAudio(),fetcher=(input:RequestInfo|URL)=>String(input).includes("c4.wav")?Promise.resolve(new Response(null,{status:503})):ok();const engine=new PlaybackEngine(()=>audio.context,fetcher);await engine.preload();await engine.noteOn("partial",60);expect(engine.diagnostics.status).toBe("degraded");expect(audio.calls.buffers).toBe(1);expect(audio.calls.oscillators).toBe(0)});
   test("a wholly rejected preload can retry and melody scheduling waits for samples",async()=>{const audio=fakeAudio();let healthy=false;const fetcher=(_input:RequestInfo|URL)=>healthy?ok():Promise.resolve(new Response(null,{status:503}));const engine=new PlaybackEngine(()=>audio.context,fetcher);await expect(engine.preload()).rejects.toThrow();healthy=true;await engine.preload();const melody:Melody={id:"test",title:"Test",meter:{numerator:4,denominator:4},tempoQpm:120,events:[{id:"a",kind:"note",midi:60,startBeat:0,durationBeats:1,measureIndex:0}]};await engine.playMelody(melody);expect(engine.diagnostics.status).toBe("sampled");expect(audio.calls.buffers).toBe(1);expect(audio.calls.oscillators).toBe(0)});
+});
+
+const melody:Melody={id:"reference",title:"Reference",meter:{numerator:4,denominator:4},tempoQpm:120,events:[{id:"a",kind:"note",midi:60,startBeat:0,durationBeats:1,measureIndex:0},{id:"b",kind:"note",midi:64,startBeat:1,durationBeats:2,measureIndex:0}]};
+
+describe("reference playback session",()=>{
+  test("one start creates one sampled session and stop removes every scheduled voice",async()=>{const audio=fakeAudio(),engine=new PlaybackEngine(()=>audio.context,ok);await engine.startReferencePlayback(melody);expect(engine.activeReferenceSessionCount).toBe(1);expect(engine.activeReferenceVoiceCount).toBe(2);expect(audio.calls.buffers).toBe(2);expect(audio.calls.oscillators).toBe(0);engine.stopReferencePlayback();expect(engine.activeReferenceSessionCount).toBe(0);expect(engine.activeReferenceVoiceCount).toBe(0);expect(audio.calls.stops.length).toBeGreaterThanOrEqual(4)});
+  test("a second start replaces rather than layers the first session",async()=>{const audio=fakeAudio(),engine=new PlaybackEngine(()=>audio.context,ok);const first=await engine.startReferencePlayback(melody);const second=await engine.startReferencePlayback(melody,1);expect(first?.state.id).not.toBe(second?.state.id);expect(engine.activeReferenceSessionCount).toBe(1);expect(engine.activeReferenceVoiceCount).toBe(1)});
+  test("rapid starts leave only the newest request alive",async()=>{const audio=fakeAudio();let release!:()=>void;const gate=new Promise<void>(resolve=>{release=resolve});const fetcher=async()=>{await gate;return ok()};const engine=new PlaybackEngine(()=>audio.context,fetcher);const first=engine.startReferencePlayback(melody),second=engine.startReferencePlayback(melody,1);release();expect(await first).toBeUndefined();expect((await second)?.state.startedAtBeat).toBe(1);expect(engine.activeReferenceSessionCount).toBe(1);expect(engine.activeReferenceVoiceCount).toBe(1)});
+  test("a new session works after stop and teardown clears it",async()=>{const audio=fakeAudio(),engine=new PlaybackEngine(()=>audio.context,ok);await engine.startReferencePlayback(melody);engine.stopReferencePlayback();await engine.startReferencePlayback(melody);expect(engine.activeReferenceSessionCount).toBe(1);engine.stop();expect(engine.activeReferenceSessionCount).toBe(0);expect(engine.activeReferenceVoiceCount).toBe(0)});
+  test("audio clock drives beat, active event, and duration fill",async()=>{const audio=fakeAudio(),engine=new PlaybackEngine(()=>audio.context,ok);const session=await engine.startReferencePlayback(melody);expect(session).toBeDefined();(audio.context as unknown as {currentTime:number}).currentTime=session!.state.startedAtAudioTime+.75;const snapshot=engine.referenceSnapshot(),preview=referencePreview(melody.events,snapshot.positionBeat);expect(snapshot.positionBeat).toBeCloseTo(1.5,5);expect(preview.activeEventIndex).toBe(1);expect(preview.visuals.b?.state).toBe("preview-active");expect(preview.visuals.b?.progress).toBeCloseTo(.25,5);expect(preview.visuals.a?.state).toBe("preview-complete")});
 });

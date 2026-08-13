@@ -22,7 +22,7 @@ Separate laboratory pages are not an acceptable deliverable for the active task.
 ## Current product map
 
 - **Find a note:** randomized staff-to-instrument training with configurable range and chromatic content.
-- **Practice a song:** one compact Song Practice workspace with Wait for me/In time, direct guidance and mistake settings, and notation-integrated seek.
+- **Practice a song:** one compact Song Practice workspace with Wait for me/In time, direct guidance and mistake settings, notation-integrated seek, and a sampled Listen/Stop preview synchronized to the staff.
 - **Play by ear:** explicit random/song-excerpt lifecycle, relative/absolute discovery and optional realtime performance.
 - **Rhythm training:** explicit generated/preset patterns with configurable meter, measures, difficulty and pitch policy.
 - **Microphone:** separate raw/candidate/display/accepted/completed state, dB hysteresis and persisted sensitivity.

@@ -454,6 +454,37 @@ test("one Song Practice implementation exposes direct settings without presets o
   await expect(page.locator(".settings-drawer pre")).toContainText('"instrument": "VCSL Hohner Super 64 samples"');
 });
 
+test("reference Listen is one stoppable preview session driven through notation",async({page})=>{
+  await page.goto("./");await openMode(page,"Practice a song");
+  const stats=await page.locator(".session-stats").innerText();
+  const seek=page.getByLabel("Practice position");await seek.evaluate((input:HTMLInputElement)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!.call(input,"2");input.dispatchEvent(new Event("input",{bubbles:true}))});
+  await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();
+  const first=Number(await seek.inputValue());await page.waitForTimeout(300);const second=Number(await seek.inputValue());expect(second).toBeGreaterThan(first);
+  await expect(page.locator(".music-ribbon.preview-active")).toHaveCount(1);expect(await page.locator(".music-ribbon.preview-active i").evaluate(element=>Number.parseFloat((element as HTMLElement).style.width))).toBeGreaterThan(0);
+  await page.getByRole("button",{name:"■ Stop"}).click();await expect(page.getByRole("button",{name:"▶ Listen"})).toBeVisible();await expect(page.locator(".music-ribbon.preview-active")).toHaveCount(0);expect(await page.locator(".session-stats").innerText()).toBe(stats);
+  await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();await page.getByRole("button",{name:"■ Stop"}).click();await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();
+});
+
+test("seek and starting practice stop reference playback without recording results",async({page})=>{
+  await page.goto("./");await openMode(page,"Practice a song");await page.getByRole("button",{name:"Touch · alternative"}).click();
+  const stats=await page.locator(".session-stats").innerText();await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();
+  await page.getByLabel("Practice position").evaluate((input:HTMLInputElement)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!.call(input,"4");input.dispatchEvent(new Event("input",{bubbles:true}))});
+  await expect(page.getByRole("button",{name:"▶ Listen"})).toBeVisible();expect(Number(await page.getByLabel("Practice position").inputValue())).toBe(4);
+  await page.getByRole("button",{name:"▶ Listen"}).click();await page.getByRole("button",{name:"Resume"}).click();await expect(page.getByRole("button",{name:"▶ Listen"})).toBeVisible();expect(await page.locator(".session-stats").innerText()).toBe(stats);
+  await page.getByRole("button",{name:"▶ Listen"}).click();await page.getByRole("button",{name:/Menu/}).click();await expect(page.getByRole("button",{name:/Practice a song/})).toBeVisible();
+});
+
+test("Ear replay animates hidden time without revealing pitch or scoring",async({page})=>{
+  await page.goto("./");await openMode(page,"Play by ear");const stats=await page.locator(".session-stats").innerText();
+  await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();await expect(page.locator(".notation-playhead")).toBeVisible();expect(await page.locator(".abc-production-render .music-hidden").count()).toBeGreaterThan(0);
+  await page.waitForTimeout(200);expect(await page.locator(".session-stats").innerText()).toBe(stats);await page.getByRole("button",{name:"■ Stop"}).click();
+});
+
+test("Find and Rhythm reference controls stop cleanly and Find can listen again",async({page})=>{
+  await page.goto("./");await openMode(page,"Find a note");await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();await page.getByRole("button",{name:"■ Stop"}).click();await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"▶ Listen again"})).toBeVisible({timeout:2500});
+  await page.getByRole("button",{name:/Menu/}).click();await openMode(page,"Rhythm training");await page.getByRole("button",{name:"▶ Repeat / listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();await expect(page.locator(".music-ribbon.preview-active")).toHaveCount(1);await page.getByRole("button",{name:"■ Stop"}).click();
+});
+
 test("notation click and drag seek the playhead",async({page})=>{
   await page.goto("./");await openMode(page,"Practice a song");
   const viewport=page.locator(".music-viewport");await viewport.scrollIntoViewIfNeeded();const box=await viewport.boundingBox();expect(box).toBeTruthy();
