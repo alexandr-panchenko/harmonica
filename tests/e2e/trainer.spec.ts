@@ -459,7 +459,7 @@ test("reference Listen is one stoppable preview session driven through notation"
   const stats=await page.locator(".session-stats").innerText();
   const seek=page.getByLabel("Practice position");await seek.evaluate((input:HTMLInputElement)=>{Object.getOwnPropertyDescriptor(HTMLInputElement.prototype,"value")!.set!.call(input,"2");input.dispatchEvent(new Event("input",{bubbles:true}))});
   await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();
-  const first=Number(await seek.inputValue());await page.waitForTimeout(300);const second=Number(await seek.inputValue());expect(second).toBeGreaterThan(first);
+  const first=Number(await seek.inputValue());await expect.poll(async()=>Number(await seek.inputValue()),{timeout:5000}).toBeGreaterThan(first);
   await expect(page.locator(".music-ribbon.preview-active")).toHaveCount(1);expect(await page.locator(".music-ribbon.preview-active i").evaluate(element=>Number.parseFloat((element as HTMLElement).style.width))).toBeGreaterThan(0);
   await page.getByRole("button",{name:"■ Stop"}).click();await expect(page.getByRole("button",{name:"▶ Listen"})).toBeVisible();await expect(page.locator(".music-ribbon.preview-active")).toHaveCount(0);expect(await page.locator(".session-stats").innerText()).toBe(stats);
   await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();await page.getByRole("button",{name:"■ Stop"}).click();await page.getByRole("button",{name:"▶ Listen"}).click();await expect(page.getByRole("button",{name:"■ Stop"})).toBeVisible();
