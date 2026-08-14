@@ -5,30 +5,32 @@
 Before making changes, read and execute:
 
 1. [`CODEX_TASK.md`](CODEX_TASK.md)
-2. [`docs/practice-workspace-redesign-spec.md`](docs/practice-workspace-redesign-spec.md)
-3. [`docs/functional-practice-spec.md`](docs/functional-practice-spec.md) for the already accepted functional semantics that must be preserved.
+2. [`docs/score-ingestion-workbench-spec.md`](docs/score-ingestion-workbench-spec.md)
+3. [`docs/architecture.md`](docs/architecture.md)
+4. [`docs/audio-pipeline.md`](docs/audio-pipeline.md)
+5. [`docs/product-roadmap.md`](docs/product-roadmap.md)
 
-These files are the current acceptance contract. Older visual, laboratory and release documents are context only and must not replace the active task.
+These files are the current acceptance contract. Older visual/practice tasks and reports are context only and must not replace the active task.
 
 ## Working rules
 
 - Start from the latest `main`; fetch before editing.
-- Work in the local VS Code/Codex environment with the available GitHub credentials.
-- Preserve the authoritative GitHub Actions Pages deployment and verify live build identity.
-- Work autonomously on routine implementation and design details resolved by the specification.
-- Group controls by task and consequence; do not create another stack of sparse full-width strips.
-- Treat notation as the primary transport/seek surface.
-- Keep target progress, played input and mistake feedback visually and semantically distinct.
-- Make the three mistake responses visibly and behaviorally different.
-- Do not silently use oscillator playback when sampled harmonica assets are healthy.
-- Preserve the current microphone state architecture, notation engraving, harmonica mappings and themes.
-- Refactor existing components/styles; do not append another emergency override layer.
+- The active environment is cloud Codex; use the available GitHub branch/PR integration rather than assuming direct push credentials.
+- Preserve the authoritative GitHub Actions Pages deployment and verify live build identity after merge.
+- Build one framework-independent import core used by both browser and Bun CLI.
+- Preserve raw source timing separately from notation interpretation.
+- Use integer canonical ticks and stable IDs; deterministic output may not depend on random values or wall-clock timestamps.
+- Expose track/part/voice selection, extraction strategy, quantization and spelling decisions instead of silently making an artistic choice.
+- Reuse the production harmonica audio pipeline for monophonic audio import; do not build a second detector.
+- Treat optional MuseScore, Audiveris and Basic Pitch executables as adapters that skip cleanly when unavailable.
+- Do not commit owner-downloaded commercial MIDI, PDF, MusicXML or audio files.
+- Keep all source processing local; do not add uploads, telemetry or backend dependencies.
+- Validate untrusted MIDI/XML/ZIP/audio input and enforce resource limits.
 - Close each failure loop: reproduce → smallest structural fix → rerun the same check → compare.
-- Use automated checks and inspect desktop/phone screenshots at original size.
-- Do not claim deployment from local preview or pushed source alone.
-- After successful verification, commit, push `main`, wait for Pages, verify live `build-meta.json`, run live production tests and leave a clean worktree.
-- Stop after the deployed compact-practice iteration and request owner review.
+- Use automated tests and inspect the deployed desktop/phone workbench.
+- Do not claim deployment from a local preview or unmerged branch.
+- After successful verification, create/merge the PR, wait for Pages, verify live `build-meta.json`, run live tests and stop for owner review.
 
 ## Out of scope
 
-Do not implement Cloudflare migration, authentication, achievements, user/community melody publishing, improvisation mode, notation editing, another colour system, another harmonica-art redesign or unrelated feature expansion during the active task.
+Do not implement Cloudflare migration, authentication, achievements, community song publishing, improvisation mode, MuseScore scraping/extension reverse engineering, browser OMR, hosted OMR, a full graphical notation editor, autonomous publication of copyrighted arrangements or unrelated feature expansion during this task.
