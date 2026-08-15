@@ -1,0 +1,5 @@
+# Score Import Workbench release report
+
+The release introduces one deterministic TypeScript ingestion core used by browser and Bun. Native paths cover Standard MIDI, MusicXML/MXL and 16-bit PCM monophonic WAV through the production audio detector. Each project retains provenance, raw timing, inventory, explicit candidates, canonical 960-PPQ events, warnings, metrics, and a settings hash. Exports are ABC, MIDI, MusicXML 4.0 and canonical JSON.
+
+The committed benchmark uses an original synthetic four-note scale and excludes processing time from deterministic comparisons. Optional MuseScore, Audiveris and Basic Pitch probes skip if their environment variables are absent. Known limitations: the native MusicXML reader intentionally supports the binding monophonic subset rather than every engraving construct; WAV is PCM16; the workbench is a review/export surface rather than a graphical editor; MIDI tempo and meter changes are inventoried but flattened with warnings for the candidate arrangement.

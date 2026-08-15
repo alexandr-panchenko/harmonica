@@ -14,8 +14,12 @@
     "test:production": "playwright test --config=playwright.production.config.ts",
     "capture:release": "bun run scripts/capture-release.ts",
     "benchmark:pitch": "bun run scripts/pitch-benchmark.ts"
+    ,"score:ingest": "bun run scripts/score-ingest.ts"
+    ,"score:benchmark": "bun run scripts/score-benchmark.ts"
+    ,"score:adapters": "bun run scripts/score-adapters.ts"
   },
   "dependencies": {
+    "@tonejs/midi": "2.0.28",
     "@vitejs/plugin-react": "5.0.2",
     "abcjs": "6.5.2",
     "jszip": "3.10.1",

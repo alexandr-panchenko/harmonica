@@ -1145,3 +1145,7 @@ These features are not rejected. They are sequenced behind the core instrument e
 - backing-track system;
 - scale catalogue source and licensing;
 - achievement thresholds and final names.
+
+## Score ingestion milestone result
+
+The local-first Score Import Workbench now establishes repository-native MIDI, MusicXML/MXL, and monophonic WAV ingestion plus deterministic interchange export. Based on the synthetic benchmark, the recommended next scoped phase is a constrained visual correction editor for candidate events; OMR benchmarking remains later and must not become browser OMR or a hosted upload service.

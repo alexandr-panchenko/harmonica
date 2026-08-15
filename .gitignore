@@ -24,3 +24,7 @@ scratch/
 /docs/screenshots/baseline/
 /docs/screenshots/bugfix-baseline/
 /docs/screenshots/bugfix-after/
+
+# Local score ingestion inputs and generated exports
+/score-import-input/
+/score-import-output/

@@ -1,0 +1,31 @@
+{
+  "fixture": "synthetic-original-scale",
+  "pitchPrecision": 1,
+  "pitchRecall": 1,
+  "onsetMeanAbsoluteErrorTicks": 0,
+  "durationMeanAbsoluteErrorTicks": 0,
+  "rests": 0.42857142857142855,
+  "ties": 0,
+  "spellingAccuracy": 1,
+  "warnings": [],
+  "candidateMetrics": {
+    "noteCount": 4,
+    "durationBeats": 3.75,
+    "minMidi": 60,
+    "maxMidi": 67,
+    "overlappingNotes": 0,
+    "restRatio": 0.42857142857142855,
+    "insideRangePercent": 100,
+    "medianInterval": 2,
+    "maxInterval": 3,
+    "noteDensity": 1.0666666666666667,
+    "repeatedNoteRatio": 0
+  },
+  "outputHashes": {
+    "abc": "542839e5d50cbf4b5c14661f07281d4d22989f0e20e7a354888194f0920ad718",
+    "midi": "79896e8f222267fa48b28e35f36d8d2ec5dbb17471ffb9d27ef63dcf4b5212a6",
+    "musicxml": "b775c26ee021c40b440f6b459c982ddf23c24b7e5bbee29aa797cb2acc3ad384",
+    "json": "a3f6fc686fdf46067bb7ae09f2fb770e2349b74c1c599a612372dca5a56ed12b"
+  },
+  "deterministic": true
+}
