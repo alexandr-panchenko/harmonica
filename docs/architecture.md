@@ -49,3 +49,7 @@ Assumptions: both profiles use standard C solo tuning; microphone input grades s
 `src/design/palette.ts` is the deterministic LCh(ab) source for the five mode families and owns sRGB conversion, WCAG relative luminance and contrast calculation. `bun run verify:colors` checks every reversible accent pair, neutral text/surface combinations and the generated CSS values used by production.
 
 Components consume semantic CSS tokens from `src/styles.css`. The root document stores a `light`, `dark` or `system` preference; a small inline bootstrap in `index.html` resolves it before React mounts, and `ThemeControl` keeps explicit preference and system colour-scheme changes synchronized. Staff and harmonica geometry are unchanged by theme selection.
+
+## Score ingestion boundary
+
+`src/score-import/core.ts` is the framework-independent import domain shared verbatim by the React workbench and Bun CLI. It owns stable source-hash IDs, canonical 960-PPQ timing, raw source notes, deterministic interpretation, warnings, and ABC/MIDI/MusicXML/JSON serialization. React only handles file selection, inspection, preview, audition, and downloads; CLI scripts only handle filesystem I/O. WAV analysis calls `analyzePcmThroughProduction`, preserving the production pitch tracker and note segmenter as the single detector. Optional executable adapters are local comparators and skip when unconfigured.

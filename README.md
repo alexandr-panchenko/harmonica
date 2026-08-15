@@ -60,3 +60,15 @@ PRODUCTION_URL=https://alexandr-panchenko.github.io/harmonica/ bun run test:prod
 GitHub Pages uses the official Actions source. `.github/workflows/pages.yml` installs the frozen dependency graph, verifies the palette, typechecks and tests before building once with `SOURCE_COMMIT=${{ github.sha }}`; only that verified `dist/` artifact reaches the Pages deployment job. A release is accepted only after live `build-meta.json` and production tests agree with the final `main` SHA.
 
 No account, backend, database, telemetry, or cloud audio processing is included in this milestone.
+
+## Score Import Workbench
+
+Open `/tools/score-import` to process Standard MIDI, MusicXML/MXL, or monophonic 16-bit PCM WAV locally. The browser and Bun CLI both call `src/score-import/core.ts`; raw timing is retained separately from the explicit 960-PPQ quantized candidate. The workbench inventories source lines, presents deterministic extraction candidates and warnings, previews notation and sampled playback, and exports ABC, MIDI, MusicXML 4.0, and canonical JSON.
+
+```bash
+bun run score:ingest -- local.mid --output score-import-output
+bun run score:benchmark
+bun run score:adapters
+```
+
+`MUSESCORE_BIN`, `AUDIVERIS_BIN`, and `BASIC_PITCH_BIN` enable version-probed local reference adapters. They skip cleanly when absent and are never required by the repository-native conversion paths. Imports remain on-device; file-size, MXL expansion/path, MIDI-event, XML declaration, and audio-duration limits are enforced. MIDI-to-MusicXML is a deterministic interpretation under visible settings, not lossless reconstruction.
