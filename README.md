@@ -8,10 +8,12 @@ The main application uses a light-first semantic visual system with persisted Li
 
 Start here:
 
-- [`CODEX_TASK.md`](CODEX_TASK.md) — active autonomous execution contract;
+- [`CODEX_TASK.md`](CODEX_TASK.md) — active autonomous execution contract (Phase 1: route fix & Score Correction Editor);
+- [`docs/product-roadmap.md`](docs/product-roadmap.md) — unified master plan, decide-now vs change-later matrix, and phased execution roadmap;
+- [`docs/canvas-collab-architecture.md`](docs/canvas-collab-architecture.md) — 3-layer architecture separating deterministic musical standards, collaborative agent artifacts (`AnimaticML/ml-collab-codec`), and the zoomable 2D/3D canvas desktop (`AnimaticML/canvas-ir`);
+- [`docs/design-packet.md`](docs/design-packet.md) — complete Portable Instruments design packet (vision, IA, journeys, screens, instruments, agent, ingestion/generation, wireframes, and review criteria);
 - [`docs/functional-practice-spec.md`](docs/functional-practice-spec.md) — binding microphone, transport and exercise semantics;
-- [`docs/architecture.md`](docs/architecture.md) — current production boundaries;
-- [`docs/product-roadmap.md`](docs/product-roadmap.md) — longer-term roadmap and deferred work.
+- [`docs/architecture.md`](docs/architecture.md) — current production boundaries.
 
 The production result is evaluated only at:
 
@@ -61,9 +63,18 @@ GitHub Pages uses the official Actions source. `.github/workflows/pages.yml` ins
 
 No account, backend, database, telemetry, or cloud audio processing is included in this milestone.
 
-## Score Import Workbench
+## Score Import & Correction Workbench
 
-Open `/tools/score-import` to process Standard MIDI, MusicXML/MXL, or monophonic 16-bit PCM WAV locally. The browser and Bun CLI both call `src/score-import/core.ts`; raw timing is retained separately from the explicit 960-PPQ quantized candidate. The workbench inventories source lines, presents deterministic extraction candidates and warnings, previews notation and sampled playback, and exports ABC, MIDI, MusicXML 4.0, and canonical JSON.
+Open `/harmonica/tools/score-import/` (served by a dedicated Vite multi-page entry `tools/score-import/index.html` → `src/score-import/main.tsx` that survives direct navigation and page refresh on GitHub Pages) to process Standard MIDI, MusicXML/MXL, monophonic 16-bit PCM WAV, or saved `.harmonica-project.json` files locally.
+
+The workbench is organized into four stages (`Import → Extract → Edit → Export`):
+
+1. **Import & Extract (`src/score-import/core.ts`):** shared verbatim by the browser and Bun CLI. Retains raw timing and source provenance separately from the explicit `960 PPQ` quantized candidate, inventories tracks/parts/voices, and previews `as-written`, `highest`, `lowest`, and `voice-leading` melody candidates.
+2. **Visual Score Correction Editor (`src/score-editor/`):** keeps the imported `ScoreImportProject` and `Candidate` immutable and edits a separate monophonic `EditableArrangement` (`960 PPQ`, explicit rests, deterministic IDs, ripple editing) through reversible `EditCommand` objects (`Undo/Redo`):
+   - **Pitch & spelling:** click/tap or Shift-range selection, vertical diatonic staff dragging on `abcjs`, keyboard navigation (`ArrowLeft/Right`, `ArrowUp/Down`, `Alt+Arrow` octave shift), and independent enharmonic respelling (`♯`/`♭`/`♮`).
+   - **Timing & structure:** duration presets (whole through 32nd, dotted, triplets), synchronized compact `TimingLane` with quantized right-edge resize handles and insertion markers, `Note ↔ Rest` conversion, insert before/after, `Delete & close gap` versus `Delete & leave rest`, `Split`, `Merge`, `Tie/Untie`, `Transpose`, `Shift octave`, `Crop to selection`, and metadata editing.
+   - **Diagnostics & diff:** continuous monophony/tie/spelling validation, 10-hole and 12-hole C chromatic harmonica range and fingering diagnostics with one-click range fit suggestions, and live `Original vs Edited` diff comparison with reset.
+3. **Audition, Export & Song Practice handoff:** stoppable sampled-harmonica audition from start or selection (with loop), byte-deterministic export to ABC, Standard MIDI, MusicXML 4.0, canonical arrangement JSON, and reloadable `.harmonica-project.json`, plus base-safe handoff of the **edited** arrangement into Song Practice.
 
 ```bash
 bun run score:ingest -- local.mid --output score-import-output
@@ -71,4 +82,4 @@ bun run score:benchmark
 bun run score:adapters
 ```
 
-`MUSESCORE_BIN`, `AUDIVERIS_BIN`, and `BASIC_PITCH_BIN` enable version-probed local reference adapters. They skip cleanly when absent and are never required by the repository-native conversion paths. Imports remain on-device; file-size, MXL expansion/path, MIDI-event, XML declaration, and audio-duration limits are enforced. MIDI-to-MusicXML is a deterministic interpretation under visible settings, not lossless reconstruction.
+`MUSESCORE_BIN`, `AUDIVERIS_BIN`, and `BASIC_PITCH_BIN` enable version-probed local reference adapters. They skip cleanly when absent and are never required by the repository-native conversion paths. Imports remain on-device; file-size, MXL expansion/path, MIDI-event, XML declaration, and audio-duration limits are enforced.

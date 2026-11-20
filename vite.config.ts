@@ -19,7 +19,13 @@ export default defineConfig({
   define: { __BUILD_META__: JSON.stringify(buildMeta) },
   build: {
     sourcemap: true,
-    rollupOptions: { output: { assetFileNames: "assets/[name]-[hash][extname]" } },
+    rollupOptions: {
+      input: {
+        main: resolve(import.meta.dirname, "index.html"),
+        scoreImport: resolve(import.meta.dirname, "tools/score-import/index.html"),
+      },
+      output: { assetFileNames: "assets/[name]-[hash][extname]" },
+    },
   },
   // Generated alongside the exact bundle, never hand-maintained.
   publicDir: "public",

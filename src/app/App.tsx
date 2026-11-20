@@ -30,6 +30,7 @@ import { PracticeWorkspace } from "../practice-ui/PracticeWorkspace";
 import { MusicTransportControls } from "../practice-ui/MusicTransportControls";
 import type { PracticeEventVisuals } from "../notation/abc/practiceEventState";
 import { referencePreview } from "../practice/referencePreview";
+import { workbenchUrl } from "./url";
 
 type Mode = "find" | "song" | "ear" | "rhythm";
 type Screen = "menu" | "songs" | "game";
@@ -81,6 +82,26 @@ export function App() {
   const [transportState,setTransportState]=useState<PracticeTransportState>(transport.current.state);
   const [referencePlayback,setReferencePlayback]=useState<ReferencePlaybackView>({status:"idle",positionBeat:0}),referenceActive=useRef(false),referencePosition=useRef(0);
 
+  useEffect(()=>{
+    const params=new URLSearchParams(location.search);
+    if(params.get("import")==="workbench"){
+      const abc=sessionStorage.getItem("score-import-abc");
+      if(abc){
+        try{
+          const imported=parseAbc(abc,"imported");
+          setSongKey("imported");
+          setCustomAbc(abc);
+          setMelody(imported);
+          setMode("song");
+          setPractice("step");
+          setScreen("game");
+          setMessage("Imported arrangement loaded · enable an input to begin");
+        }catch{
+          // ignore malformed
+        }
+      }
+    }
+  },[]);
   useEffect(()=>{setFindSequence(createRandomSequence(pool,64));setActive(0);setPerformance([])},[pool]);
   useEffect(()=>localStorage.setItem(PREFERENCES.profile,profile.id),[profile.id]);
   useEffect(()=>localStorage.setItem(PREFERENCES.staffLabels,String(staffLabels)),[staffLabels]);
@@ -294,7 +315,7 @@ function MainMenu({onStart,onSettings,settings,profile}:{onStart:(mode:Mode)=>vo
 
 function SongLibrary({selected,initialAbc,onChoose,onImport,onBack}:{selected:string;initialAbc:string;onChoose:(key:string)=>void;onImport:(abc:string)=>void;onBack:()=>void}) {
   const [importAbc,setImportAbc]=useState(initialAbc);
-  return <div className="song-library"><header><button className="menu-exit" onClick={onBack}>← Main menu</button><span>Song library</span><ThemeControl/></header><main><div className="library-copy"><span className="eyebrow">Song practice</span><h1>Choose your song</h1><p>Choose a melody, then decide how much guidance you want and practise it note by note or in time.</p></div><div className="song-grid">{Object.entries(SONGS).map(([key,song])=><button key={key} className={`song-card ${key===selected?"selected":""}`} onClick={()=>onChoose(key)}><span className="song-symbol">♫</span><b>{song.title}</b><i>{key===selected?"Current":"Choose"} →</i></button>)}</div><p><a className="primary" href="./tools/score-import">Open Score Import Workbench</a></p><details className="import-source"><summary>Import ABC</summary><p>Use your own monodic ABC notation as a separate source.</p><textarea aria-label="ABC notation" value={importAbc} onChange={(event)=>setImportAbc(event.target.value)}/><button className="primary" onClick={()=>onImport(importAbc)}>Open imported score</button></details></main></div>;
+  return <div className="song-library"><header><button className="menu-exit" onClick={onBack}>← Main menu</button><span>Song library</span><ThemeControl/></header><main><div className="library-copy"><span className="eyebrow">Song practice</span><h1>Choose your song</h1><p>Choose a melody, then decide how much guidance you want and practise it note by note or in time.</p></div><div className="song-grid">{Object.entries(SONGS).map(([key,song])=><button key={key} className={`song-card ${key===selected?"selected":""}`} onClick={()=>onChoose(key)}><span className="song-symbol">♫</span><b>{song.title}</b><i>{key===selected?"Current":"Choose"} →</i></button>)}</div><p><a className="primary" href={workbenchUrl()}>Open Score Import Workbench</a></p><details className="import-source"><summary>Import ABC</summary><p>Use your own monodic ABC notation as a separate source.</p><textarea aria-label="ABC notation" value={importAbc} onChange={(event)=>setImportAbc(event.target.value)}/><button className="primary" onClick={()=>onImport(importAbc)}>Open imported score</button></details></main></div>;
 }
 
 function PlayerSetup({profileId,setProfileId,staffLabels,setStaffLabels,harmonicaLabels,setHarmonicaLabels,namingSystem,setNamingSystem}:{profileId:string;setProfileId:(value:string)=>void;staffLabels:boolean;setStaffLabels:(value:boolean)=>void;harmonicaLabels:boolean;setHarmonicaLabels:(value:boolean)=>void;namingSystem:NamingSystem;setNamingSystem:(value:NamingSystem)=>void}) {

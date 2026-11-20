@@ -61,4 +61,4 @@ export function MusicStage({document,mode,activeBeat,activeWrittenEventId,hidden
 /** Preserve source offsets while preventing authored body newlines from creating systems. */
 function timelineAbcSource(source:string):string{const key=source.search(/^K:.*$/m);if(key<0)return source.replace(/\n/g," ");const body=source.indexOf("\n",key);return body<0?source:source.slice(0,body+1)+source.slice(body+1).replace(/\n/g," ")}
 /** Titles and other page chrome do not belong inside the notation SVG. */
-function canvasAbcSource(source:string):string{return source.replace(/^T:.*$/gm,line=>" ".repeat(line.length))}
+function canvasAbcSource(source:string):string{return source.replace(/^[TC]:.*$/gm,line=>" ".repeat(line.length))}

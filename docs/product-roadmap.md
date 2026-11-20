@@ -1,1151 +1,237 @@
-# Harmonica Trainer product roadmap
+# Portable Instruments (Harmonica Trainer) — единый план продукта и разработки
 
-Status: **canonical planning document · M10 approved, M11/M12 release candidate implemented**
-Last updated: **2026-08-06**
-
-This document replaces the sequence of local sprint prompts and handoff notes that were used to build the current prototype. Those historical prompts are useful as development history, but they are no longer the source of truth for future work. The current implementation is described in `README.md`, `docs/architecture.md`, and the release reports. Future product and design work should be planned here.
-
-The roadmap deliberately separates:
-
-- **Decision** — a direction that should be preserved unless new evidence disproves it.
-- **Experiment** — a bounded prototype intended to choose between alternatives.
-- **Deferred** — intentionally out of the current scope, not forgotten.
-
-The next production changes must not begin with another broad request to “make it prettier.” The notation and virtual-instrument redesigns are separate design problems. Each gets an isolated laboratory first, owner review second, and production migration only after the design is approved.
+Статус: **канонический мастер-план продукта, архитектуры и этапов разработки**  
+Обновлено: **20 ноября 2026**
 
 ---
 
-## 1. Product vision
+## 0. Единый реестр документации (где что лежит и как связано)
 
-Harmonica Trainer should become a game-like learning environment for chromatic harmonica rather than a collection of forms and utilities.
+Чтобы в проекте не было противоречий между прошлыми спринтами, текущими спецификациями и долгосрочным видением, вся документация разделена на три чётких уровня:
 
-Its long-term learning loop is:
+### 1. Стратегия, продуктовый дизайн и архитектура 3 слоёв (этот уровень)
+- **[`docs/product-roadmap.md`](product-roadmap.md) (этот документ)** — главный навигатор: видение музыкального хобби без барьера входа, матрица решений («принять заранее vs легко поменять потом»), поэтапный план работ с разделением на `[КОД]`, `[ДИЗАЙН]`, `[ПРОТОТИП]` и `[РЕШЕНИЕ]`, а также правила быстрой разработки без потери времени.
+- **[`docs/canvas-collab-architecture.md`](canvas-collab-architecture.md)** — **архитектура 3 слоёв и форматов данных**:
+  1. **Слой 1 (Детерминированные стандарты и Sidecar-медиа):** `.mid`, `.musicxml`, `.mxl`, `.abc`, `.wav` и вычислительные движки (`960 PPQ`, DSP, сэмплы, аппликатуры);
+  2. **Слой 2 (Совместный документ человека и агента на [`AnimaticML/ml-collab-codec`](https://github.com/AnimaticML/ml-collab-codec)):** читаемый тегированный артефакт ↔ JSON, редактирование артефакта целиком через `proposeEdit` / `rebaseProposal` (а не десяток RPC-функций), OT-синхронизация, совместный `Undo/Redo` и реактивный `DerivedGraph`;
+  3. **Слой 3 (Масштабируемый 2D/3D рабочий стол-холст на [`AnimaticML/canvas-ir`](https://github.com/AnimaticML/canvas-ir)):** интерактивная 2D-графика (`RecordingContext`, `Scene`, `Renderer`, `Components`, `VirtualGroup`, `EventRouter`, `@canvas-ir/text`, `AccessibilityLayer`) с бесшовным переходом в 3D/AR (`@canvas-ir/three`, `@canvas-ir/babylon`).
+- **[`docs/design-packet.md`](design-packet.md)** — полный дизайн-пакет **Portable Instruments** (13 разделов): информационная архитектура `Music Project`, пользовательские сценарии (`U1`–`U10`), брифы экранов (`S1`–`S13`), визуальная система, правила нотного стана и редактора, мульти-инструментальные модели, взаимодействие с агентом, импорт/генерация, wireframes (`W1`–`W8`), промпты для генерации концептов (`P1`–`P11`) и критерии приёмки.
+
+### 2. Действующие технические спецификации (активный и ближайший код)
+- **[`CODEX_TASK.md`](../CODEX_TASK.md)** и **[`docs/score-correction-editor-spec.md`](score-correction-editor-spec.md)** — **текущая боевая задача (Этап 1)**: починка прямого статического роута `/harmonica/tools/score-import/` на GitHub Pages и реализация визуального редактора коррекции монофонической мелодии (`EditableArrangement`, команды, Undo/Redo, перетаскивание нот на стане `abcjs`, компактная `TimingLane`, инспектор, проверка диапазона и передача в практику).
+- **[`docs/score-ingestion-workbench-spec.md`](score-ingestion-workbench-spec.md)** — действующий контракт детерминированного ядра импорта (`960 PPQ`, MIDI, MusicXML/MXL, моно-WAV, стратегии извлечения кандидатов, сериализация).
+- **[`docs/architecture.md`](architecture.md)** — описание текущих границ продакшен-кода (`AbcAdapter`, `MusicStage`, `HarmonicaStage`, `ProductionAudioPipeline`, `PracticeTransport`, `PlaybackEngine`, `score-import/core.ts`).
+- **[`docs/functional-practice-spec.md`](functional-practice-spec.md)** — контракт работы микрофона, транспорта и режимов тренировки.
+- **[`docs/transcription-models-backlog.md`](transcription-models-backlog.md)** — технический бэклог адаптеров распознавания (MuScriptor, Basic Pitch, YourMT3+, Audiveris OMR).
+
+### 3. Исторический контекст (выполненные этапы, не заменяют текущий план)
+- `docs/visual-system-spec.md`, `docs/practice-workspace-redesign-spec.md`, `docs/production-redesign-spec.md`, `docs/release-report.md`, `docs/score-import-release-report.md` и отчёты экспериментов (`docs/*-experiment.md`, `docs/design-labs-report.md`) — зафиксированные результаты прошлых итераций.
+
+---
+
+## 1. Главная идея продукта: музыка как хобби без многолетнего барьера входа
+
+Люди берут музыкальный инструмент ради простых и живых целей:
+1. **Сыграть любимую, знакомую мелодию или песню** — для себя или чтобы показать друзьям уже в первый день или в первую неделю.
+2. **Подобрать мелодию, которая нравится** — по аудиозаписи, ссылке на видео/YouTube, MIDI или фото нот, не тратя годы на сольфеджио.
+3. **Сочинить что-то своё** — превратить свою историю или заметки в стихи и песню, сгенерировать музыку, получить её ноты и сразу разучить их на своём инструменте.
+4. **Развить слух и научиться импровизировать на ходу** — улавливать мелодии на лету, свободно играть в ладу, отвечать на музыкальные фразы (call-and-response), играть соло и в компании.
+
+В традиционном обучении всё это закрыто огромным барьером входа: нужно годами учиться читать ритм по нотам, запоминать абстрактные табы и аппликатуры, подбирать на слух без подсказок. При этом современной технологией этот барьер снимается полностью:
 
 ```text
-see or hear a musical intention
+Любой источник (любимая песня / YouTube / MIDI / фото нот / свой голос / AI-генерация)
         ↓
-produce it on a real or virtual harmonica
+Чистая мелодическая линия + быстрая визуальная коррекция (Score Correction Editor)
         ↓
-receive immediate, musically meaningful feedback
+Честная нотная запись + наглядные ленты длительности (Timeline Staff / Piano-roll гибрид)
         ↓
-repeat, vary, improvise, and build durable skill
+Наглядная физическая проекция прямо на выбранный инструмент (без абстрактных табов!)
+        ↓
+Интерактивная практика с обратной связью в реальном времени (Wait for me → In time)
+        ↓
+Развитие слуха на лету, свободная и игровая импровизация, собственные песни
 ```
 
-The product should support several kinds of musicianship instead of reducing harmonica practice to note memorization:
+---
 
-- reading standard notation;
-- learning where pitches are available on a particular harmonica;
-- playing melodies with accurate pitch, rhythm, duration, and intonation;
-- finding melodies by ear in absolute or relative form;
-- learning songs with all required guidance visible;
-- developing rhythmic control;
-- improvising inside scales, motifs, and changing musical constraints;
-- building a personal repertoire and a visible practice history.
+## 2. Что уже построено в коде (Фундамент M1–M13)
 
-The current static GitHub Pages application is the correct place to finish the core interaction, notation, sound recognition, and visual design. Accounts, cloud persistence, user-created libraries, achievements, and community features come after the local product is demonstrably pleasant and correct.
+На текущий момент в репозитории **уже работают в продакшене**:
+- **Нотный стан и таймлайн (`AbcAdapter`, `MusicStage`):** гравировка `abcjs`, режим `Timeline` с измеренными лентами длительностей после головок нот, интерактивный playhead прямо на стане, разделение `written events` (как написано) и `sound events` (как звучит с учётом лиг), локальная индикация ошибок (`×` на реально сыгранной высоте) и раздельное эталонное прослушивание (`ReferencePlaybackSession` на сэмплах VCSL).
+- **Физическая визуализация хроматической гармоники (`HarmonicaStage`, `HarmonicaBody`, `FingeringPlanner`):** профили на 10 и 12 отверстий, режим `Compact Guidance` (для микрофона, без ложного угадывания слайдера при энгармонических/дублирующихся позициях) и `Interactive Touch` (40/48 прямых зон), анимация слайдера и дыхания.
+- **Звуковой пайплайн и тренажёр (`ProductionAudioPipeline`, `PracticeTransport`, `StepPracticeEngine`, `RealtimePerformanceEngine`):** калибровка шума, сегментация нот, режимы *Find a Note*, *Practice a Song* (`Wait for me` и `In time`), *Play by Ear* (относительный/абсолютный подбор отрывков и фраз), *Rhythm Training*.
+- **Детерминированное ядро импорта (`src/score-import/core.ts`, `ScoreImportWorkbench`):** единая база времени `960 PPQ`, импорт Standard MIDI, MusicXML/MXL и моно-WAV (через тот же продакшен-детектор высоты), сохранение сырого тайминга отдельно от квантованного, выбор кандидатов (`as-written`, `highest`, `lowest`, `voice-leading`), экспорт в ABC, MIDI, MusicXML 4.0 и канонический JSON, плюс CLI-инструменты и бенчмарк.
 
 ---
 
-## 2. Current state
+## 3. Архитектурный фильтр: какие решения принять ЗАРАНЕЕ, а какие ЛЕГКО ПОМЕНЯТЬ ПОТОМ
 
-The application already has working versions of:
+Подробная спецификация архитектуры вынесена в **[`docs/canvas-collab-architecture.md`](canvas-collab-architecture.md)**.
 
-- Find a note;
-- Play the score;
-- Play by ear;
-- Rhythm training;
-- Learn a song;
-- microphone pitch detection and note segmentation;
-- a persistent virtual harmonica during microphone use;
-- explicit 10-hole and 12-hole C chromatic profiles;
-- independent staff and harmonica note labels;
-- letter-name and solfège display;
-- sampled harmonica playback;
-- a card-based built-in song library;
-- static GitHub Pages deployment.
+### 3.1. Решения, которые фиксируем ЗАРАНЕЕ (несущие стены — менять дорого)
 
-The two largest remaining quality problems are not missing modes. They are the two visual objects at the center of every mode:
+Эти 7 правил соблюдаются во всём новом коде с первого дня:
 
-1. **The staff is hand-engraved by application code and is not sufficiently correct or polished.**
-2. **The virtual harmonica is still an HTML control grid that only loosely resembles a real instrument.**
+1. **Строгое разделение 3 слоёв и форматов данных (Стандарты ≠ Документ агента ≠ Сцена рендера):**
+   - **Слой 1 (Внутренние детерминированные функции и внешние стандарты):** бинарные исходники (`.mid`, `.musicxml`, `.mxl`, `.wav`, `.pdf`), плотные массивы `pitchTrace` и многодорожечные сырые данные хранятся как неизменяемые (`immutable`) контент-адресуемые sidecar-ресурсы (`sha256`) и обрабатываются детерминированными движками (`960 PPQ`). Они **не раздувают** документ агента.
+   - **Слой 2 (Документ человека и агента на `ml-collab-codec`):** редактируемый проект (`<project>` → `<source>`, `<arrangement>`, `<lyrics>`, `<board>`) описывается схемой `ml-collab-codec` с двусторонней сериализацией в читаемый тегированный текст ↔ JSON.
+   - **Слой 3 (Интерактивный 2D/3D холст на `canvas-ir`):** интерфейс строится как масштабируемый рабочий стол (`CanvasIR Scene`), где партитура, дорожка длительностей, карточки источников, инструмент и лирика рисуются как индексированные группы (`beginGroup`/`endGroup`, `Components`, `VirtualGroup`) с единым `EventRouter` и готовностью к 3D (`@canvas-ir/three` / `@canvas-ir/babylon`).
+2. **Артефакт вместо набора RPC-функций для агента (`proposeEdit` + `rebaseProposal`):**
+   - Агент читает и редактирует **сам тегированный документ/фрагмент проекта** (или генерирует его по `exportDocument(schema, provider)`), а не вызывает десятки императивных функций.
+   - `proposeEdit` автоматически строит идентичностный diff по стабильным `id` нот и строк (`diffToChanges`), `rebaseProposal` совмещает предложение агента с параллельными правками человека через OT, а `Undo/Redo` работает единообразно для обоих.
+3. **Каноническая модель музыкальных событий (`960 PPQ`, явные паузы, `Written` vs `Sound`, стабильные ID):**
+   - Никаких `Date.now()` или случайных `UUID` в сериализуемых данных проекта — только детерминированные ID.
+   - `abcjs` и строка ABC — это **только производное представление (через `DerivedGraph`) и формат обмена**, а не источник истины редактора.
+   - Высота звука (`midi` / центы) и нотное написание (`writtenPitch`: ступень, октава, альтерация `C#` vs `Db`) хранятся раздельно.
+4. **Реактивный граф вычислений (`DerivedGraph` из `ml-collab-codec`):**
+   - Пересчёт ABC, геометрии нот, диагностики диапазона и аппликатур (`FingeringPlanner`) привязан через `DerivedGraph` только к музыкальным свойствам. Перемещение карточек по холсту (`<board>`) никогда не вызывает пересчёт музыки или аудио.
+5. **Многомерный контракт инструмента (`InstrumentProfile` + `InstrumentPlacement`):**
+   - Высота звука ≠ физическое действие. Микрофон определяет высоту (и отклонение в центах), но не притворяется, что знает, на какой струне понтийской лиры или на каком дублирующем отверстии гармоники она взята.
+   - Абстракция инструмента сразу допускает дискретные клавиши/отверстия/язычки (`discrete`) и непрерывную позицию на струне (`continuous`), а также независимое измерение артикуляции (`breath`, `slide`, `pluck`, `bow`, `key`).
+6. **Контракт асинхронных задач (`RecognitionJob` / `GenerationJob`) и локальный приоритет:**
+   - Всё, что работает в браузере (MIDI, MusicXML, моно-WAV, редактор, практика), работает на 100% локально без сервера.
+   - Любая тяжёлая внешняя модель (OMR, многодорожечный AMT, генерация музыки ACE-Step, YouTube-аудио) подключается как асинхронный адаптер со статусами `draft → queued → running → result-ready → needs-review → failed`, который регистрирует новый sidecar-источник и кандидатов.
+7. **Честное разделение аудио и нот:**
+   - Сгенерированное аудио (например, из ACE-Step) или загруженный трек не изображаются как «готовые ноты», пока не прошёл явный шаг транскрипции и проверки кандидатов.
 
-These are the immediate focus. All cloud and social work is deferred until they are solved.
+### 3.2. Решения, которые ЛЕГКО ПОМЕНЯТЬ ПОТОМ (не блокируют код!)
 
----
+По этим вопросам **не нужно останавливать разработку** — выбираем разумный дефолт и правим на живом холсте:
 
-## 3. Visual direction reset
-
-### Decision: light-first, clean, legible design
-
-The earlier dark-neon direction is no longer a product requirement. It helped establish a game-like identity, but it also encouraged low-contrast text, heavy black surfaces, artificial glow, and a virtual instrument that feels less like a harmonica.
-
-The next design experiments should use a **light-first baseline**:
-
-- light neutral or warm-gray background;
-- dark, high-contrast musical notation;
-- restrained metallic or pearl surfaces for the instrument;
-- generous whitespace;
-- clear typography;
-- colored duration ribbons, active-note fills, pitch traces, and feedback as focused accents;
-- glow only where it communicates state, never as a substitute for contrast.
-
-A future optional dark theme remains possible, but the redesign should first prove itself in a clean, bright presentation.
-
-### Rejected concept direction
-
-Do not repeat the first generated instrument concept:
-
-- very dark gunmetal body;
-- cyan-purple neon as the dominant material treatment;
-- strong perspective with one end much larger than the other;
-- dramatic product-shot angle that makes interactive geometry hard to map.
-
-That image is not a production asset and should not be committed.
-
-### Desired instrument-art direction
-
-- near-orthographic front/top three-quarter view;
-- only a small amount of perspective;
-- all holes remain close to equal apparent width;
-- the mouthpiece and every hole are clearly visible;
-- the physical slide button is clearly visible at the right;
-- bright brushed stainless steel, satin silver, pale pearl, or another clean material;
-- no visible third-party logo or copied brand text;
-- transparent or very light neutral background;
-- suitable for deterministic SVG hit zones and animation overlays.
-
-Easttop 4Runner (12-hole) and Easttop 1040 (10-hole) may be used as physical references for proportions and slide placement. The final asset should remain generic and should either be based on an owner-supplied photograph or on newly generated art with clean provenance.
+- **Начальная раскладка карточек на бесконечном холсте (`<board>`):** поскольку на холсте `canvas-ir` карточки источников, партитуры, инструмента и лирики позиционируются координатами `(x, y, w, h)` и соединяются коннекторами, мы можем в любой момент переключать пресеты камеры («Фокус на партитуре», «Режим практики», «Свободный стол-коллаж») без переделки компонентов.
+- **Вид инспектора и HUD-панелей:** плавающая карточка над холстом (в отдельной HUD-сцене `canvas-ir`) или боковая панель / bottom-sheet на телефоне.
+- **Точные цвета, шрифты, отступы и LOD-пороги** при зуме холста (`lod: { textBelow, skipBelow }`).
+- **Переход от 2D-стола к 3D-комнате и 3D-моделям инструментов:** благодаря `canvas-ir` (`Surface`, `World`, `Objects`) один и тот же 2D-интерфейс карточек позже поднимается в 3D (`@canvas-ir/three` / `@canvas-ir/babylon`) без переписывания логики рисования и событий.
+- **Конкретный провайдер внешней AI-модели или облачного хостинга** (MuScriptor vs YourMT3+, локальный файл vs Cloudflare D1/R2).
 
 ---
 
-# Part I — immediate two-stage redesign
+## 4. Поэтапный план разработки (с разметкой КОД / ДИЗАЙН / ПРОТОТИП / РЕШЕНИЕ)
 
-## 4. Stage A: isolated design laboratories
-
-### Goal
-
-Produce evidence and reviewed visual prototypes without replacing the production staff or production virtual harmonica.
-
-### Non-goals
-
-During this stage, do not:
-
-- rewrite exercise logic;
-- remove the current production components;
-- redesign every screen simultaneously;
-- move to Cloudflare;
-- add accounts, achievements, or user libraries;
-- build a notation editor;
-- commit an AI-generated concept directly as a final production asset.
-
-The laboratories may be committed to `main` behind explicit lab routes because they are isolated and statically deployable.
+Метки задач:
+- 🟢 **`[КОД — ГОТОВО К РЕАЛИЗАЦИИ]`** — спецификация полная, дизайн-блокеров нет, пишем код и автотесты.
+- 🟡 **`[ПРОТОТИП В КОДЕ]`** — быстрее собрать интерактивный прототип прямо на холсте и пощупать руками, чем рисовать статичные картинки.
+- 🎨 **`[ДИЗАЙН-КОНЦЕПТ]`** — задача на визуальную компоновку / генерацию референсов.
+- ⚖️ **`[РЕШЕНИЕ ВЛАДЕЛЬЦА]`** — точка, где нужен твой выбор после просмотра прототипа.
 
 ---
 
-## 5. Staff-design laboratory
+### Этап 1 (СЕЙЧАС). Починка роута Workbench + Визуальный редактор коррекции мелодии
+**Основание:** [`CODEX_TASK.md`](../CODEX_TASK.md), [`docs/score-correction-editor-spec.md`](score-correction-editor-spec.md), [`docs/canvas-collab-architecture.md`](canvas-collab-architecture.md).
 
-Create `/lab/staff-design`.
-
-The laboratory renders the same deliberately difficult fixture through multiple approaches so that engraving quality, temporal readability, overlays, scrolling, and mobile behavior can be compared directly.
-
-### 5.1 Required variants
-
-1. **Current custom renderer**
-   - baseline only;
-   - preserve long enough to compare and establish migration parity.
-
-2. **abcjs standard engraving**
-   - conventional paper-like spacing;
-   - standard measures and line wrapping;
-   - active-note highlighting only.
-
-3. **abcjs time-based layout**
-   - horizontal spacing proportional to musical duration;
-   - no game overlay at first.
-
-4. **abcjs time-based layout plus gameplay overlay**
-   - duration ribbons;
-   - fixed judgment line;
-   - active-note progress;
-   - pitch trace;
-   - correct/incorrect performed-note history.
-
-5. **abcjs standard engraving plus gameplay highlighting**
-   - conventional score layout;
-   - active element and elapsed-duration fill;
-   - automatic movement to the next system.
-
-### 5.2 Required musical fixture
-
-Use one fixture collection that exposes failures rather than a simple C-major scale. It must contain:
-
-- explicit sharps, flats, and naturals;
-- a key signature whose accidentals are not repeated beside every note;
-- whole, half, quarter, eighth, dotted, and shorter values already supported by exercises;
-- corresponding rests;
-- beamed groups;
-- a tie inside a measure;
-- a tie across a barline;
-- repeated notes separated by articulation;
-- barlines and multiple measures;
-- 4/4 and 6/8 examples;
-- a pickup measure;
-- low and high ledger-line notes in the supported harmonica range;
-- enough measures to require horizontal movement or system scrolling;
-- at least one melody from the built-in song library.
-
-### 5.3 abcjs direction
-
-**Decision:** use abcjs as the notation engraver unless the laboratory exposes a specific blocking limitation.
-
-The installed dependency is already available in the application. The production redesign should first use documented public functionality:
-
-- `renderAbc()` for engraving;
-- `add_classes: true` for styling and element association;
-- `timeBasedLayout` for a duration-proportional horizontal timeline;
-- `TimingCallbacks` for beat, event, and line-end synchronization;
-- `responsive`, `wrap`, or horizontal viewport options as appropriate;
-- click and drag support only in later melody-editing work.
-
-Do not fork abcjs before proving that the required result cannot be achieved with public render options and an application-owned overlay.
-
-Pin the tested abcjs version. Any use of the returned visual-object internals must be isolated behind one adapter because abcjs documents that internal return structures are not guaranteed to remain backward compatible.
-
-### 5.4 Two user-facing notation modes
-
-The laboratory is expected to validate two modes, not force one layout onto all users.
-
-#### Timeline Staff — default learning mode
-
-Purpose: maximize temporal legibility for beginners and guided performance.
-
-- abcjs engraves correct notation;
-- `timeBasedLayout` makes horizontal distance proportional to duration;
-- the current duration ribbon idea is preserved;
-- a fixed judgment line sits around 35–40% of viewport width;
-- music moves under the line continuously;
-- several previous and upcoming notes remain visible;
-- the active ribbon visibly shows how long to hold;
-- standard note values remain visible and correct instead of being replaced by ribbons;
-- ties can continue one sounding ribbon across separate written notes;
-- performed pitch and timing appear on a separate overlay.
-
-This is the preferred default for Find a note, Rhythm training, Learn a song, and beginner score practice.
-
-#### Engraved Score — conventional reading mode
-
-Purpose: support musicians who already read notation and want conventional spacing.
-
-- abcjs uses ordinary score layout;
-- measures and systems look like printed music;
-- active notes are highlighted;
-- elapsed duration may be shown as a restrained fill or underline;
-- the view scrolls or changes systems near the line end;
-- duration ribbons are optional or much less prominent.
-
-This should be available in Play the score and may be exposed elsewhere as a display preference.
-
-### 5.5 Written events and sounding events
-
-The current simplified melody model should not be stretched until it pretends to be a full notation parser.
-
-Introduce a deliberate distinction:
-
-```ts
-interface WrittenMusicEvent {
-  id: string;
-  kind: "note" | "rest";
-  writtenPitch?: WrittenPitch;
-  startBeat: number;
-  durationBeats: number;
-  measureIndex: number;
-  tie?: "start" | "continue" | "end";
-  sourceRange?: { start: number; end: number };
-}
-
-interface SoundEvent {
-  id: string;
-  midi: number;
-  startBeat: number;
-  durationBeats: number;
-  writtenEventIds: string[];
-}
-```
-
-A note tied across a barline may be two written events but one sound event. Engraving uses written events; playback, scoring, and a continuous hold ribbon use sound events.
-
-### 5.6 ABC as melody source of truth
-
-For built-in and future user melodies:
-
-```text
-ABC source
-   ↓
-abcjs parse / render
-   ↓
-AbcAdapter
-   ├── written event mapping
-   ├── sounding event mapping
-   ├── SVG/event association
-   └── diagnostics and validation
-   ↓
-exercise engine / playback / scoring / overlays
-```
-
-The adapter must be one tested boundary. Exercise and scoring code must not query arbitrary abcjs SVG internals throughout the app.
-
-### 5.7 Staff-lab deliverables
-
-- route and fixture selector;
-- all five render variants;
-- desktop screenshots;
-- phone portrait screenshots;
-- phone landscape screenshots where useful;
-- measured render width and scroll behavior;
-- notes on ties, accidentals, beams, barlines, responsive behavior, and overlay alignment;
-- recommendation with rejected alternatives;
-- no production `GameStage` replacement yet.
-
-### 5.8 Staff-lab acceptance questions
-
-The owner should be able to answer visually:
-
-- Are accidentals, key signatures, rests, beams, ties, and bars unmistakably correct?
-- Is Timeline Staff easier to follow than conventional notation?
-- Does the ribbon add information without hiding standard notation?
-- Does the fixed judgment line feel natural?
-- Is the conventional mode readable and calm?
-- Are mobile notes large enough?
-- Does motion remain smooth rather than jumping between notes?
+Это **непосредственная текущая задача**, для которой есть 100% спецификации и которую выполняем первой:
+1. 🟢 **`[КОД]` Статический multi-page роутинг Vite:**
+   - Вынести `tools/score-import/index.html` → `src/score-import/main.tsx`, чтобы прямой URL `/harmonica/tools/score-import/` и `F5` (refresh) на GitHub Pages возвращали `200 OK`, а не `404`.
+   - Сделать base-safe хелперы навигации (`Back to Trainer`, `Open in Song Practice`).
+2. 🟢 **`[КОД]` Домен редактируемой монофонической аранжировки (`src/score-editor/`), совместимый со схемой `ml-collab-codec`:**
+   - Неизменяемый `ScoreImportProject` (Слой 1) + редактируемый `EditableArrangement` (`960 PPQ`, явные паузы, детерминированные ID узлов, ripple-редактирование без скрытых наложений).
+   - Полный набор обратимых команд (`SetPitch`, `MovePitchDiatonically`, `RespellPitch`, `SetDuration`, `InsertEvent`, `DeleteEvent` с закрытием дыры или паузой, `ConvertNoteRest`, `SplitEvent`, `MergeEvents`, `ToggleTie`, `TransposeSelection`, `ShiftOctave`, `CropToSelection`, `SetMetadata`) + `Undo/Redo`.
+   - Непрерывная валидация и детерминированная сериализация в `.harmonica-project.json`, ABC, MIDI, MusicXML 4.0 и JSON.
+3. 🟢 **`[КОД]` UI редактора коррекции и интерактивной дорожки тайминга (`S4`, `S5`, `W2`, `W7`):**
+   - Поток `Import → Extract → Edit → Export` в компактном `canvas-first` стиле.
+   - Выделение ноты/диапазона по стабильному ID, вертикальный drag ноты прямо на стане `abcjs` (через обратимую команду + ререндер), управление с клавиатуры.
+   - Компактная однострочная дорожка `TimingLane` под нотным станом (блоки нот/пауз, ресайз длительности с квантованием, playhead).
+   - Компактный `EventInspector`, диагностика диапазона и аппликатуры гармоники (10/12 отверстий), дифф `Original vs Edited`, прослушивание на сэмплах и передача **исправленной** аранжировки в `Song Practice`.
 
 ---
 
-## 6. Harmonica-design laboratory
+### Этап 2. Интеграция `ml-collab-codec` + `canvas-ir`: Масштабируемый 2D-холст музыкального проекта
+**Основание:** [`docs/canvas-collab-architecture.md`](canvas-collab-architecture.md), репозитории `AnimaticML/ml-collab-codec` и `AnimaticML/canvas-ir`.
 
-Create `/lab/harmonica-design`.
+Цель — перевести проект на полноценный документ-артефакт `ml-collab-codec` и интерактивный масштабируемый рабочий стол `canvas-ir` (с панорамированием, зумом, карточками и коннекторами).
 
-The laboratory explores the visual asset, geometry, hit zones, responsive behavior, and state animations without replacing the production component.
-
-### 6.1 Decision: hybrid visual model
-
-Use a hybrid of:
-
-- a clean raster or SVG base for the physical body and material;
-- deterministic SVG/HTML geometry for hit zones;
-- a separately animated slide button;
-- application-owned overlays for guidance, microphone detection, pressed state, airflow, correct state, and error state.
-
-A flat photograph alone is insufficient because it cannot reliably provide responsive hit geometry, state-specific lighting, separate 10-hole/12-hole variants, or a moving slide. A pure HTML table is also insufficient because it does not look like an instrument.
-
-### 6.2 Projection
-
-Use near-orthographic front/top three-quarter projection:
-
-- the instrument stays mostly horizontal;
-- left and right ends have similar apparent scale;
-- all mouthpiece holes are visible;
-- the top cover establishes physical realism;
-- the mouthpiece face provides a stable plane for interaction;
-- the right slide button and rod are visible;
-- no dramatic diagonal recession.
-
-### 6.3 Direct-action geometry
-
-One press must continue to represent the complete action: hole, breath, and slide state.
-
-The strongest candidate embeds four direct-action regions into every visible physical hole:
-
-```text
-┌───────────────────┐
-│ blow / slide out  │ blow / slide in
-├───────────────────┤
-│ draw / slide out  │ draw / slide in
-└───────────────────┘
-```
-
-This is interaction geometry, not a visible spreadsheet. At rest:
-
-- divisions are subtle;
-- the object still reads as one physical mouthpiece;
-- full labels may be hidden;
-- hover, focus, guided, or learning-label states reveal more structure.
-
-Alternative overlay treatments may be compared in the lab, but no design may require pressing a separate slide control before pressing the hole.
-
-### 6.4 Slide animation
-
-The slide is a separate visual object with at least two positions:
-
-- released: knob outside the body and rod visibly extended;
-- pressed: knob moves toward the body, rod shortens, and shadow/contact state changes.
-
-Rules:
-
-- virtual direct action with `slide: in` presses it;
-- virtual direct action with `slide: out` releases it;
-- guided mode animates the recommended action;
-- microphone input only animates the slide when every matching action agrees on slide state;
-- if microphone matches include both states, highlight all valid zones and leave the physical slide neutral rather than claiming knowledge the microphone cannot provide.
-
-### 6.5 Breath and state animation
-
-Use restrained, informative motion:
-
-- blow: a soft outward airflow cue;
-- draw: a soft inward airflow cue;
-- pressed action: inner-hole illumination and a small material response;
-- guided target: calm pulsing outline;
-- microphone detected: a distinct outer trace or halo;
-- correct: clean short confirmation pulse;
-- incorrect: restrained shake or broken outline;
-- do not rely on color alone.
-
-### 6.6 10-hole and 12-hole assets
-
-Both profiles must share one visual language. The lab should compare:
-
-- two separately generated base assets with identical camera and material;
-- one parameterized body assembled from end caps, a repeatable center section, mouthpiece holes, and a shared slide.
-
-The parameterized approach is preferable if it remains visually coherent. Two separate assets are acceptable if they look materially identical and their interactive geometry is generated from the same profile data.
-
-The typed profile remains the source of truth. Art must never encode musical mapping.
-
-### 6.7 AI-assisted asset process
-
-AI generation is encouraged for concepting and may provide production base art, but it must be constrained by geometry and reviewed before use.
-
-Generate at least three light concepts:
-
-1. brushed stainless steel on transparent/light background;
-2. satin pearl/silver body with restrained colored accents;
-3. clean product-illustration hybrid with slightly simplified surfaces.
-
-Every concept must have:
-
-- correct hole count;
-- no logos or invented text;
-- near-orthographic projection;
-- minimal perspective distortion;
-- clearly separated slide button;
-- clean silhouette;
-- no hands, case, cloth, or other objects;
-- sufficiently high resolution for 2× displays.
-
-Reject and regenerate any image with:
-
-- wrong number or malformed holes;
-- hidden mouthpiece openings;
-- warped or duplicated slider hardware;
-- strong diagonal recession;
-- dark-black/neon-dominant material;
-- baked-in highlights that conflict with interactive state overlays;
-- brand marks or unreadable pseudo-text.
-
-### 6.8 Owner-supplied photo option
-
-An owner photograph is the strongest provenance source and may be used directly or as generation/reference input.
-
-Recommended capture set:
-
-- 12-hole Easttop 4Runner and, if available, 10-hole Easttop 1040;
-- neutral light-gray or white background;
-- diffuse daylight or two soft lights;
-- camera farther away with a moderate telephoto/2× lens to reduce perspective;
-- instrument level and nearly horizontal;
-- front/top three-quarter view;
-- front mouthpiece view;
-- top view;
-- right-side slide released;
-- right-side slide pressed;
-- no hand in the final frame;
-- highest available resolution;
-- one measurement or ruler reference outside the production crop.
-
-### 6.9 Harmonica-lab states
-
-The lab must display, for 10-hole and 12-hole versions:
-
-- idle;
-- labels off;
-- labels on;
-- blow/out active;
-- blow/in active;
-- draw/out active;
-- draw/in active;
-- slider released;
-- slider pressed;
-- guided target;
-- microphone detection with one mapping;
-- microphone detection with multiple mappings;
-- correct feedback;
-- incorrect feedback;
-- desktop;
-- phone portrait with horizontal scrolling;
-- phone landscape.
-
-### 6.10 Harmonica-lab deliverables
-
-- chosen visual-art family;
-- transparent source assets;
-- exact normalized hit-zone geometry;
-- animation prototype;
-- 10/12 scaling proof;
-- desktop and mobile screenshots;
-- accessibility and keyboard plan;
-- notes on asset license/provenance;
-- recommendation with rejected alternatives;
-- no production replacement yet.
-
-### 6.11 Harmonica-lab acceptance questions
-
-- Does it immediately look like a real chromatic harmonica?
-- Can every hole be distinguished without zooming?
-- Is the projection useful rather than merely dramatic?
-- Can the user understand direct actions after a short introduction?
-- Does the slider visibly press and release?
-- Are guided and detected states distinguishable?
-- Is the instrument still comfortable on a phone?
-- Does the bright design fit the staff and the rest of the UI?
+1. 🟢 **`[КОД]` Подключение `ml-collab-codec` и схема `PortableInstrumentsSchema v1`:**
+   - Описать схему тегированного документа (`<project>`, `<source>`, `<arrangement>`, `<measure>`, `<note>`, `<rest>`, `<lyrics>`, `<board>`).
+   - Настроить двусторонний кодек (читаемый тегированный текст ↔ таблица `Table` ↔ JSON), `Authority`/`Client`, совместный `Undo/Redo` и реактивный `DerivedGraph`.
+2. 🟢 **`[КОД]` Рабочий стол-холст на `canvas-ir` (`Scene`, `Renderer`, `EventRouter`, `VirtualGroup`, `AccessibilityLayer`):**
+   - Построить масштабируемый 2D-холст, где карточки `Source`, `Score + TimingLane`, `Instrument`, `Lyrics` и живые стрелки-коннекторы лежат на одной поверхности, поддерживают зум/пан, кэшированный drag (`renderer.lift`), виртуализацию длинных партитур (`VirtualGroup`) и DOM-зеркало доступности (`AccessibilityLayer`).
+   - Вынести плавающий транспорт, тулбар и `AgentDock` в HUD-сцену поверх стола.
+3. ⚖️ **`[РЕШЕНИЕ ВЛАДЕЛЬЦА]`:** Проверить интерактивный холст на десктопе и телефоне (удобство зума/пана и пресетов камеры для быстрой практики).
 
 ---
 
-## 7. Stage A verification and owner gate
+### Этап 3. Мульти-инструментальность (возврат к физическому инструменту без табов)
+**Основание:** раздел `07`, экраны `S6`, `W8`, промпты `P7`, `P8` из [`docs/design-packet.md`](design-packet.md).
 
-The agent should run automated tests and inspect browser screenshots, but production migration is blocked on owner visual approval.
+Цель — отвязать партитуру от одной только губной гармоники, чтобы одну и ту же мелодию можно было сразу увидеть и сыграть на любом компактном инструменте.
 
-Required Stage A output:
-
-- lab URLs;
-- exact commit SHA;
-- screenshot index;
-- fixture descriptions;
-- comparison table;
-- technical limitations;
-- recommended staff variant;
-- recommended instrument variant;
-- explicit list of decisions still requiring owner choice.
-
-No agent should interpret “laboratory works” as approval to replace production components automatically.
+1. 🟢 **`[КОД]` Универсальный контракт `InstrumentProfile` и `InstrumentPlacement`:**
+   - Выделить общую границу инструмента: проверка диапазона, поиск всех физических позиций для высоты `midi`, планировщик аппликатуры/переходов, рендеринг подсказок для микрофона (с учётом неоднозначности) и для прямого ввода (Touch / WebMIDI).
+2. 🟢 **`[КОД]` MIDI-клавиатура и Мелодика:**
+   - Поддержка WebMIDI API (точный `note-on/off`, velocity) + микрофонный режим для мелодики.
+   - Компактная интерактивная клавиатура с подсветкой целевых клавиш, реально нажатых клавиш и подсказками по дыханию/фразировке для мелодики.
+3. 🟡 **`[ПРОТОТИП]` + 🎨 `[ДИЗАЙН]` Калимба (17 / 21 / 34 / 41 язычок):**
+   - Реальная пространственная схема чередующихся металлических язычков (левая/правая сторона от центра, настраиваемый строй), подсветка больших физических скачков и альтернативных язычков (а не фальшивая фортепианная клавиатура).
+4. 🟡 **`[ИССЛЕДОВАТЕЛЬСКИЙ ПРОТОТИП]` Понтийская лира / Karadeniz kemençesi (stress-test непрерывной высоты):**
+   - Три струны без ладов, непрерывная зона позиции пальца, индикатор интонации в центах (`±¢`) и отдельная дорожка рекомендации смычка (с честным предупреждением, что микрофон проверяет высоту, а не струну).
+5. ⚖️ **`[РЕШЕНИЕ ВЛАДЕЛЬЦА]`:** Выбор приоритетного второго инструмента для полировки после гармоники (Калимба vs Мелодика/MIDI).
 
 ---
 
-## 8. Stage B: production implementation after approval
+### Этап 4. Встроенный контекстный AI-агент над партитурой
+**Основание:** раздел `08`, экран `S13`, `W2` из [`docs/design-packet.md`](design-packet.md).
 
-Only after Stage A approval:
+Цель — дать пользователю музыкального помощника, который понимает выделенный фрагмент на нотном стане и делает рутинную музыкальную работу («упрости такты 9–12 для калимбы», «транспонируй в удобный диапазон», «почему у меня не получается 4-й такт?»).
 
-1. Introduce `AbcStaffRenderer` and the tested `AbcAdapter`.
-2. Add Timeline Staff and Engraved Score preferences.
-3. Port duration ribbons, fixed playhead, pitch trace, performed-note history, hidden-note slots, and feedback overlays.
-4. Route all production modes through the canonical written/sound event model.
-5. Introduce the approved visual harmonica component and assets.
-6. Preserve typed 10-hole/12-hole mappings and ambiguity-safe microphone highlighting.
-7. Remove the old custom glyph renderer only after feature and regression parity.
-8. Remove the old HTML-grid visual implementation only after direct-action and accessibility parity.
-9. Run the complete unit, benchmark, browser, production, desktop, phone, and real-instrument acceptance set.
-10. Deploy a release candidate to GitHub Pages for owner testing.
-
-### Production acceptance
-
-The owner performs the final checks with a real harmonica:
-
-- notation correctness and readability;
-- Timeline rhythm guidance;
-- Engraved Score readability;
-- real microphone tracking;
-- slider animation plausibility;
-- touch geometry on phone;
-- mode-by-mode progression;
-- overall light visual system.
+1. 🟢 **`[КОД]` Компактный `AgentDock` (Collapsed / Compact / Expanded) и визуальный `Score Diff`:**
+   - Агент использует **ту же самую систему `EditCommand`**, что и ручной редактор.
+   - Любое предложение агента сначала создаёт `Pending Proposal`: на нотном стане старые ноты показываются тонким контуром (ghost outline), новые — контрастно, с кнопками `[Listen Preview]`, `[Apply]`, `[Reject]`.
+2. 🟢 **`[КОД]` Локальные детерминированные навыки агента (без платного API):**
+   - Авто-подбор оптимального транспонирования/октавы под выбранный инструмент (`Fit to instrument range`).
+   - Упрощение ритма и скачков в выделенных тактах (снятие мелизмов, сглаживание широких интервалов).
+   - Диагностика проблемных тактов по результатам практики (`Practice Take` → «Повторить такт 4 в темпе 70 BPM»).
+3. 🟡 **`[ПРОТОТИП]` Подключение LLM-провайдера для свободных текстовых намерений:**
+   - Передача компактного JSON-контекста (`SelectionContext` + события выделенных тактов + профиль инструмента) и получение списка `EditCommand`.
 
 ---
 
-# Part II — deferred platform roadmap
+### Этап 5. Снятие барьера репертуара и творчества: Аудио/YouTube → Ноты, Фото нот (OMR) и Генерация своей песни (Lyrics + ACE-Step)
+**Основание:** раздел `09`, экран `S11`, `W5`, [`docs/transcription-models-backlog.md`](transcription-models-backlog.md).
 
-## 9. Cloudflare migration and persistence
+Цель — позволить человеку принести **любую** песню или **придумать свою с нуля** и через минуту уже разучивать её на инструменте.
 
-Status: **Deferred until the visual and musical core is approved.**
-
-The static client should be prepared through interfaces, not prematurely moved.
-
-### 9.1 Adapter boundaries to introduce before migration
-
-```ts
-interface MelodyRepository {
-  list(query?: MelodyQuery): Promise<MelodySummary[]>;
-  get(id: string): Promise<MelodyDocument>;
-  save?(document: MelodyDocument): Promise<MelodyDocument>;
-}
-
-interface ProgressStore {
-  loadProfile(): Promise<PlayerProfile>;
-  loadProgress(): Promise<UserProgress>;
-  appendSession(session: PracticeSession): Promise<void>;
-  saveSettings(settings: PlayerSettings): Promise<void>;
-}
-
-interface AuthProvider {
-  getSession(): Promise<AuthSession | null>;
-  signIn(): Promise<void>;
-  signOut(): Promise<void>;
-}
-```
-
-The current implementations remain static/local. A later Cloudflare deployment replaces adapters rather than exercise logic.
-
-### 9.2 Likely Cloudflare responsibilities
-
-To be validated when this phase begins:
-
-- Workers for API and authorization boundaries;
-- D1 for users, melody metadata, revisions, progress, sessions, and achievements;
-- R2 for user audio fixtures, optional backing tracks, exported files, and larger melody assets;
-- KV only for suitable caches or configuration, not canonical progress;
-- Durable Objects only if a future real-time collaborative editor creates a genuine coordination need.
-
-### 9.3 Authentication scope
-
-Start with simple account creation/sign-in sufficient to synchronize progress and user melodies. Do not let authentication dominate the product.
-
-Research before implementation:
-
-- passwordless email/magic link;
-- OAuth providers;
-- anonymous local profile upgraded to an account;
-- data export and account deletion;
-- abuse prevention for public melody publishing.
-
-### 9.4 Offline-first behavior
-
-The current local-first character is valuable and should remain:
-
-- exercises continue without network;
-- settings and unfinished sessions save locally;
-- synchronization is retryable and idempotent;
-- conflicts in user melody editing create explicit revisions rather than silent overwrite;
-- audio is not uploaded unless the user intentionally saves or submits it.
+1. 🟢 **`[КОД]` Запись живой идеи с инструмента или голоса в браузере (`Guided Recorder`):**
+   - Метроном / count-in → запись с микрофона → `ProductionAudioPipeline` → сравнение живого тайминга (`expressive`) и квантованных нот → открытие в `Score Correction Editor`.
+2. 🟡 **`[ПРОТОТИП]` Многодорожечное аудио и YouTube / Видео → MIDI-кандидаты (AMT):**
+   - Подключение адаптера транскрипции полных миксов (сравнение `YourMT3+` / `MR-MT3` / `MuScriptor` / `Basic Pitch` на локальном сервере или воркере).
+   - Безопасный пайплайн для ссылок/видео (учёт прав и provenance + fallback на загрузку локального аудиофайла пользователя).
+   - Все распознанные дорожки открываются в уже готовом экране выбора кандидатов (`Extract → Edit`), где пользователь слушает выделенную партию и правит огрехи.
+3. 🟡 **`[ПРОТОТИП]` Фото / PDF нот → MusicXML (OMR):**
+   - Интеграция `Audiveris` / OMR-адаптера с режимом **side-by-side**: слева — скан/фото страницы, справа — распознанный стан с подсветкой `low-confidence` нот и синхронным выделением.
+4. 🟡 **`[ПРОТОТИП]` Сочинение собственной песни (`Lyrics + ACE-Step → Транскрипция → Практика`, экран `S11` / `W5`):**
+   - **Шаг 1 (Стихи):** пользователь пишет заметки/историю/настроение (или желаемый уровень языка, например English B1) → генерация и построчная редактура куплетов и припева.
+   - **Шаг 2 (Музыка):** отправка текста и стиля в `ACE-Step` → получение A/B вариантов аудиозаписи.
+   - **Шаг 3 (Честный мост к нотам):** явное состояние `Audio ready · No score yet` → нажатие `[Transcribe melody]` → прогон через AMT/моно-пайплайн → быстрая правка в `Score Correction Editor` → разучивание собственной песни на инструменте!
 
 ---
 
-## 10. Melody library and authoring
+### Этап 6. Развитие слуха на лету и Игровая импровизация (соло и в группе)
+**Основание:** раздел `11` предыдущего роадмапа и твоя концепция свободного музыкального хобби.
 
-Status: **Deferred product phase after persistence.**
+Когда человек уже сыграл первые любимые песни и попробовал сочинить свою, следующий шаг музыкальной свободы — **улавливать мелодии на слух на лету и импровизировать**:
 
-### 10.1 Library
-
-The future library should contain:
-
-- built-in curated melodies;
-- private user melodies;
-- optionally published community melodies;
-- difficulty and instrument-range metadata;
-- tags, composer/source, meter, tempo, key, and estimated practice duration;
-- transposition/range compatibility for 10-hole and 12-hole profiles;
-- revisions and provenance;
-- favorites, recent practice, and completion state.
-
-### 10.2 Initial authoring experience
-
-Do not begin by building a full graphical score editor.
-
-The first authoring version should be:
-
-- ABC text editor;
-- live abcjs preview;
-- parse diagnostics tied to source ranges;
-- instrument-range validation;
-- monophony validation for supported exercise modes;
-- tempo, title, composer, key, and difficulty metadata;
-- playback preview;
-- save as draft;
-- explicit revision history.
-
-### 10.3 Later direct manipulation
-
-A limited direct editor may later support:
-
-- dragging a note vertically to change pitch;
-- selecting a note and choosing duration;
-- inserting or deleting a note/rest;
-- moving a note in time within a simple monodic measure;
-- changing ties and barlines through constrained controls.
-
-abcjs can provide selection and visual dragging, but dragging does not mutate the underlying ABC. The application must translate the drag into an ABC source edit and rerender. That is preferable to writing a complete engraver/editor from scratch.
-
-### 10.4 Alternative input from the harmonica
-
-A useful later authoring mode can record a monophonic phrase from:
-
-- the virtual instrument;
-- microphone-detected real harmonica;
-- step input without rhythm;
-- timed input with quantization.
-
-The result is converted to editable ABC with explicit confidence and quantization controls.
+1. 🟢 **`[КОД]` Расширение *Play by Ear* до потокового тренажёра слуха («Поймай мелодию на лету»):**
+   - Режим эхо-игры без нотного стана или со скрытым станом: приложение играет живые фразы из реальных песен или генерирует мотивы в выбранном ладу, а игрок тут же повторяет их на инструменте на слух (с переходом от относительного слуха к абсолютному и подсказкой интервалов).
+2. 🟢 **`[КОД]` Интерактивный исследователь ладов (`Scale Explorer`) на физическом инструменте:**
+   - Каталог ладов (блюзовый, пентатоника, дорийский, гармонический минор, бибоп и др.) подсвечивается прямо на корпусе гармоники / калимбы / клавиатуры / лиры (тоника, аккордовые тона, допустимые ступени).
+   - Свободная игра под дрон или ритм-пульс без «ошибок» — приложение показывает, какую ступень лада ты сейчас берёшь.
+3. 🟢 **`[КОД]` Игра в импровизацию: карточки ограничений (`Constraint Cards`) и `Call & Response`:**
+   - **Повтори ритм, измени ноты** / **Оставь мотив, измени ритм**.
+   - **Музыкальный диалог (`Call & Response`):** приложение играет вопрос (2 такта), ты отвечаешь на инструменте (2 такта) с простым правилом (например: «закончи на тонике», «сыграй в верхнем регистре», «не повторяй одну ноту дважды подряд»).
+   - **Импровизация в группе / под аккомпанемент:** игра соло поверх сменяющихся гармоний/бэкинг-трека с плавной сменой подсвеченных целевых нот на инструменте к следующему такту.
 
 ---
 
-# Part III — improvisation game backlog
-
-## 11. Improvisation as a first-class mode
-
-Status: **Detailed backlog; not part of the immediate redesign.**
-
-Improvisation should eventually become one of the most distinctive parts of the product. Harmonica practice should not be limited to identifying notes and reproducing existing melodies. The instrument is strongly associated with spontaneous phrasing, exploration, and playing what comes to mind.
-
-The inspiration includes the former **Harmonica Scale Finder** site: a large visual catalogue of scales and alternate harmonica tunings that made it easy to see where a bebop, gypsy, harmonic, blues, or other scale lay on the instrument and immediately improvise with it.
-
-### 11.1 Research task
-
-Before implementing the mode:
-
-- recover the user’s saved copy from disk if available;
-- search web archives for the historical Harmonica Scale Finder;
-- record its scale catalogue, filters, visual strengths, and limitations;
-- verify scale formulas through independent music-theory sources;
-- avoid copying protected site code or artwork;
-- treat it as product inspiration and a data-recovery lead.
-
-### 11.2 Scale-domain model
-
-A scale definition should not be a static screenshot. Model it explicitly:
-
-```ts
-interface ScaleDefinition {
-  id: string;
-  name: string;
-  aliases: string[];
-  intervalSemitones: number[];
-  degreeLabels?: string[];
-  tags: string[];
-  family?: string;
-  description?: string;
-}
-
-interface ScaleContext {
-  scaleId: string;
-  tonicMidiClass: number;
-  profileId: string;
-  minMidi: number;
-  maxMidi: number;
-}
-```
-
-The system maps scale pitch classes into every playable action of the selected harmonica profile and can show:
-
-- tonic;
-- chord tones;
-- other scale tones;
-- repeated physical positions;
-- unavailable degrees in the selected range;
-- bends and alternate techniques later.
-
-### 11.3 Improvisation experience layers
-
-#### A. Scale explorer
-
-No score and no failure state.
-
-- choose tonic and scale;
-- see all matching positions on the virtual instrument;
-- play freely through microphone or touch;
-- see the current scale degree;
-- optional drone or metronome;
-- out-of-scale notes are shown, not punished;
-- save favorite scale/profile combinations.
-
-#### B. Free improvisation with a soft boundary
-
-- choose scale and tempo;
-- app tracks whether notes remain inside the scale;
-- show phrase length, rests, repetition, register, and rhythmic density;
-- no single “correct melody”;
-- session summary describes behavior rather than assigning a simplistic musical-quality score.
-
-#### C. Constraint cards
-
-The application generates one temporary rule at a time. Examples:
-
-- do not repeat the previous pitch;
-- use only three selected scale degrees;
-- end the phrase on the tonic;
-- begin away from the tonic;
-- move in one direction, then reverse;
-- include one leap larger than a third;
-- avoid adjacent scale steps for one bar;
-- use the same note no more than twice;
-- stay in the low register;
-- move to the high register in the next phrase;
-- leave one full beat of silence;
-- answer with fewer notes than the prompt;
-- answer with more notes than the prompt.
-
-These rules turn improvisation into a game without prescribing the exact notes.
-
-#### D. Rhythm imitation, pitch variation
-
-- application plays or shows a rhythmic figure;
-- user repeats the rhythm but chooses different scale pitches;
-- scoring checks onset/duration similarity and scale membership, not exact pitch;
-- advanced versions allow ornamentation while preserving the rhythmic skeleton.
-
-#### E. Pitch-cell preservation, rhythm variation
-
-- application gives one note, interval, or short pitch cell;
-- user keeps the pitch material but invents a new rhythm;
-- the next round may require augmentation, diminution, syncopation, or inserted rests.
-
-#### F. Call and response
-
-- application generates a short phrase inside the selected scale;
-- user answers rather than copies;
-- response constraints may require:
-  - same rhythm, different pitches;
-  - same contour, new rhythm;
-  - contrary contour;
-  - end on a chosen degree;
-  - reuse a motif exactly once;
-  - shorten or extend the phrase.
-
-#### G. Guided generative improvisation
-
-The application can “improvise for the player” one choice at a time:
-
-- suggest the next scale degree;
-- suggest direction rather than an exact note;
-- suggest a rhythmic cell;
-- generate a complete phrase to perform;
-- gradually remove guidance as the player succeeds.
-
-This supports players who want to improvise but do not yet know how to begin.
-
-#### H. Scale transitions
-
-Advanced missions introduce a new harmonic or modal context:
-
-- improvise in one scale for several bars;
-- switch tonic while retaining the same interval pattern;
-- switch from one scale family to another;
-- pivot through a common pitch;
-- land on a target tone after the switch;
-- alternate two scales on a fixed schedule;
-- react to an unexpected but clearly announced change.
-
-The visual system should show the transition without instantly revealing a complete optimal phrase.
-
-### 11.4 Game-rule engine
-
-Represent prompts as composable constraints rather than hard-coded screens:
-
-```ts
-interface ImprovisationConstraint {
-  id: string;
-  description: string;
-  appliesTo: "note" | "phrase" | "rhythm" | "transition";
-  evaluate(context: ImprovisationContext): ConstraintResult;
-}
-```
-
-A mission can combine:
-
-- one scale context;
-- one rhythmic constraint;
-- one pitch constraint;
-- one phrase-shape goal;
-- one transition rule.
-
-Difficulty changes the number, strictness, and duration of constraints.
-
-### 11.5 Feedback philosophy
-
-Do not claim to judge whether an improvisation is artistically “good.” Score observable goals:
-
-- scale membership;
-- adherence to the current constraint;
-- timing relative to pulse;
-- duration control;
-- requested motif use;
-- phrase start/end goal;
-- requested register or direction;
-- successful scale transition;
-- variety over time when variety is explicitly requested.
-
-Also report descriptive metrics:
-
-- pitch-class distribution;
-- most-used degree;
-- range;
-- average phrase length;
-- silence ratio;
-- rhythmic density;
-- repeated-note ratio;
-- interval distribution;
-- contour changes.
-
-### 11.6 Backing context
-
-Later additions may include:
-
-- drone;
-- metronome;
-- simple chord loop;
-- generated bass pulse;
-- curated backing tracks with clear licensing;
-- harmonic changes that update valid/target tones.
-
-The first version should not require generative audio or a complex accompaniment engine.
-
-### 11.7 Improvisation-mode progression
-
-A possible progression:
-
-1. find and play one scale;
-2. stay in scale for 20 seconds;
-3. make two-note phrases;
-4. add rests;
-5. vary rhythm on one note;
-6. vary pitch with one rhythm;
-7. answer a phrase;
-8. obey one constraint;
-9. obey two compatible constraints;
-10. move between registers;
-11. target chord tones;
-12. switch scales;
-13. complete longer free missions.
-
----
-
-## 12. Achievements and progression
-
-Status: **Deferred until persistent progress exists, but the event model should be designed before implementation.**
-
-Achievements should reward meaningful practice rather than arbitrary clicking.
-
-### 12.1 Event model
-
-Exercise modes should eventually emit normalized events such as:
-
-```ts
-type PracticeEvent =
-  | { type: "note-accepted"; mode: Mode; pitch: number; timingMs?: number }
-  | { type: "phrase-completed"; mode: Mode; difficulty: number; score: ScoreBreakdown }
-  | { type: "song-completed"; melodyId: string; difficulty: number; assisted: boolean }
-  | { type: "ear-phrase-found"; relative: boolean; transposition?: number; attempts: number }
-  | { type: "improvisation-session"; durationMs: number; constraintsPassed: string[] }
-  | { type: "practice-session-ended"; durationMs: number; activeDays: number };
-```
-
-The achievement engine consumes events and remains separate from exercise logic.
-
-### 12.2 Achievement families
-
-#### Repertoire
-
-- complete the first melody;
-- complete melodies at increasing difficulty;
-- complete a melody without visible note labels;
-- complete a melody in time;
-- complete a melody with high pitch and rhythm accuracy;
-- complete songs across several keys or ranges when transposition is available.
-
-#### Speed and precision
-
-- accurately perform a fast phrase;
-- maintain timing over a longer run;
-- hold a difficult sustained note steadily;
-- complete a phrase with tight onset and release tolerances;
-- perform a chromatic passage without errors.
-
-#### Ear training
-
-- find the first relative phrase;
-- find a phrase in a transposed starting position;
-- find an absolute phrase;
-- solve longer or more complex phrases;
-- reduce attempts over repeated sessions;
-- correctly identify difficult intervals.
-
-#### Rhythm
-
-- complete the first rhythm pattern;
-- accurately perform rests and releases;
-- complete syncopated or compound-meter patterns;
-- maintain pulse through a long phrase;
-- reproduce a rhythm while changing pitches.
-
-#### Improvisation
-
-- improvise continuously for 1, 5, 10, 20, 30, and 60 minutes cumulatively or in suitable sessions;
-- remain in a chosen scale;
-- pass constraint missions;
-- complete call-and-response missions;
-- use several scale families;
-- make a successful scale transition;
-- demonstrate requested rhythmic or pitch variation.
-
-#### Practice habit
-
-- practice on several distinct days;
-- maintain a humane streak;
-- return after a break;
-- accumulate active practice time;
-- balance several skill areas.
-
-Streak mechanics should avoid punishing the player or encouraging meaningless activity. “Come back” and flexible weekly goals may be healthier than a single fragile daily streak.
-
-### 12.3 Achievement integrity
-
-- distinguish assisted and unassisted completion;
-- do not award speed achievements from virtual playback or reference audio;
-- use normalized verified exercise results;
-- tolerate offline sessions and reconcile them idempotently;
-- allow local progress export;
-- make achievement definitions data-driven and versioned.
-
----
-
-## 13. Suggested milestone sequence
-
-### M10 — Staff and harmonica design laboratories
-
-Status: **Approved by owner.** Timeline/Score, light product illustration, and compact/interactive split are fixed decisions.
-
-- `/lab/staff-design`;
-- `/lab/harmonica-design`;
-- light-first visual experiments;
-- abcjs comparison;
-- generated/photo-based instrument concepts;
-- reviewed screenshots;
-- owner design decision.
-
-### M11 — Production notation migration
-
-Status: **Release candidate implemented.** Production AbcAdapter, measured Timeline geometry, Engraved Score, generated subset serializer, hidden masking, and all-mode integration are complete pending owner real-instrument acceptance.
-
-- AbcAdapter;
-- written/sound event split;
-- Timeline Staff;
-- Engraved Score;
-- gameplay overlays;
-- parity and migration tests.
-
-### M12 — Production visual harmonica
-
-Status: **Release candidate implemented.** Shared body, Compact Guidance, Interactive Touch, deterministic fingering planner, ambiguity-safe microphone state, and mobile auto-follow are complete pending owner acceptance.
-
-- approved base art;
-- deterministic interaction geometry;
-- animated slider;
-- state overlays;
-- 10/12 responsive variants;
-- real-instrument owner acceptance.
-
-### M13 — Core product hardening
-
-- full mode walkthroughs;
-- song data validation;
-- real-device latency and microphone tuning;
-- accessibility pass;
-- polished light theme;
-- curated melody expansion;
-- stable GitHub Pages release.
-
-### M14 — Persistence foundations
-
-- local repository/store interfaces;
-- Cloudflare architecture decision;
-- authentication prototype;
-- D1 schema;
-- synchronization model;
-- privacy/export/delete design.
-
-### M15 — User melody library
-
-- account-backed private melodies;
-- ABC editor and preview;
-- revisions;
-- range validation;
-- publishing model if approved.
-
-### M16 — Progression and achievements
-
-- normalized practice events;
-- progress summaries;
-- achievement engine;
-- repertoire and habit tracking.
-
-### M17 — Improvisation game
-
-- scale catalogue;
-- scale explorer;
-- constraint engine;
-- rhythm/pitch transformation missions;
-- call and response;
-- scale-transition missions;
-- improvisation progression and achievements.
-
----
-
-## 14. Explicit current non-goals
-
-Until M10–M13 are accepted, do not begin:
-
-- backend migration;
-- login UI;
-- public user profiles;
-- achievements UI;
-- community melody publishing;
-- a complete graphical notation editor;
-- collaborative editing;
-- AI-generated accompaniment;
-- social leaderboards;
-- monetization.
-
-These features are not rejected. They are sequenced behind the core instrument experience.
-
----
-
-## 15. Decision log
-
-### Accepted
-
-- Preserve the duration-ribbon idea.
-- Use professional notation engraving rather than continuing a custom glyph system.
-- Try abcjs public capabilities before considering a fork.
-- Support both Timeline Staff and conventional Engraved Score.
-- Keep ABC as the canonical melody-authoring format for the foreseeable future.
-- Use a hybrid visual harmonica: realistic base art plus deterministic interactive overlay.
-- Preserve one-press direct actions; never require pressing the physical slide control first.
-- Animate the visible physical slide to explain slide state.
-- Continue ambiguity-safe microphone highlighting.
-- Move the next design direction toward light, clean, and high-contrast presentation.
-- Finish the static/local product before Cloudflare persistence work.
-- Treat improvisation as a major future mode rather than a minor scale-reference screen.
-- Use Balanced Timeline density (`minPadding: 13`, `minWidth: 33`) as the production default.
-- Use Compact Guidance for recommended microphone practice and Interactive Touch only for explicit touch input.
-- Use a parameterized vector/CSS product illustration without a raster base for this release candidate.
-
-### M10 experiments resolved
-
-- Timeline uses Balanced density, a 38% judgment line, notehead-aligned 10 px ribbons, and sound-event progress over written tie segments.
-- Engraved Score uses conventional wrapping and active-system follow.
-- The parameterized product-illustration body scales both typed profiles.
-- Compact hides quadrants; Interactive Touch reveals four direct zones only on explicit touch selection.
-
-### Experiments still required
-
-- whether the light redesign should retain an optional dark theme.
-
-### Deferred decisions
-
-- authentication provider;
-- exact Cloudflare data architecture;
-- public community library and moderation;
-- graphical editor scope;
-- backing-track system;
-- scale catalogue source and licensing;
-- achievement thresholds and final names.
-
-## Score ingestion milestone result
-
-The local-first Score Import Workbench now establishes repository-native MIDI, MusicXML/MXL, and monophonic WAV ingestion plus deterministic interchange export. Based on the synthetic benchmark, the recommended next scoped phase is a constrained visual correction editor for candidate events; OMR benchmarking remains later and must not become browser OMR or a hosted upload service.
+## 5. Как мы работаем, чтобы не терять время ни в планировании, ни в тестировании
+
+1. **Никакого «дизайна ради дизайна» перед очевидным кодом:**
+   - Там, где архитектура и поведение уже однозначны (как в **Этапе 1: Route Fix + Score Correction Editor** или в доменных моделях `InstrumentProfile`), мы **сразу пишем чистый модульный код** и проверяем его на реальном экране.
+   - Доменная логика всегда пишется в чистом TypeScript отдельно от React (`src/score-import/`, `src/score-editor/`, `src/instrument/`), поэтому любые перестановки UI-панелей происходят мгновенно и никогда не требуют переписывания логики.
+2. **Визуальные развилки решаем быстрыми A/B прототипами или прицельными рендерами:**
+   - Для сложных композиционных развилок (например, `Shell Variant A vs B` или схема язычков калимбы) используем готовые промпты из [`docs/design-packet.md`](design-packet.md#11-concept-image-prompts) или быстрый интерактивный переключатель прямо в браузере на одном и том же реальном проекте.
+3. **Быстрый двухуровневый цикл тестирования (Zero wasted test time):**
+   - **Во время разработки фичи (секунды):** запускаем только быстрые таргетированные проверки (`bun run typecheck` и `bun test <конкретный-файл>`), не гоняя тяжёлые браузерные сьюты на каждую строчку.
+   - **Перед коммитом / PR и деплоем (полный конвейер):** один раз прогоняем полный обязательный гейт (`verify:colors`, `typecheck`, `bun test`, `benchmark:pitch`, `score:benchmark`, `build`, `test:browser`, `test:production`) + визуальный осмотр десктопных и мобильных скриншотов в оригинальном разрешении.
+4. **Неизменная чистота репозитория:**
+   - В `git` никогда не коммитятся коммерческие MIDI/PDF/аудио и бинарные скриншоты проверок — только детерминированные синтетические/public-domain фикстуры и воспроизводимые скрипты.
