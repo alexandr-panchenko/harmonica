@@ -50,6 +50,19 @@ Assumptions: both profiles use standard C solo tuning; microphone input grades s
 
 Components consume semantic CSS tokens from `src/styles.css`. The root document stores a `light`, `dark` or `system` preference; a small inline bootstrap in `index.html` resolves it before React mounts, and `ThemeControl` keeps explicit preference and system colour-scheme changes synchronized. Staff and harmonica geometry are unchanged by theme selection.
 
-## Score ingestion boundary
+## Score ingestion and correction editor boundary
 
-`src/score-import/core.ts` is the framework-independent import domain shared verbatim by the React workbench and Bun CLI. It owns stable source-hash IDs, canonical 960-PPQ timing, raw source notes, deterministic interpretation, warnings, and ABC/MIDI/MusicXML/JSON serialization. React only handles file selection, inspection, preview, audition, and downloads; CLI scripts only handle filesystem I/O. WAV analysis calls `analyzePcmThroughProduction`, preserving the production pitch tracker and note segmenter as the single detector. Optional executable adapters are local comparators and skip when unconfigured.
+The application uses a real Vite multi-page architecture so every static route resolves directly on GitHub Pages without client-pathname hacks:
+
+- `index.html` → `src/main.tsx` (root Harmonica Trainer and diagnostic labs);
+- `tools/score-import/index.html` → `src/score-import/main.tsx` (`ScoreImportWorkbench` at `/harmonica/tools/score-import/`);
+- `src/app/url.ts` owns base-aware URL construction (`appUrl`, `trainerUrl`, `workbenchUrl`) for navigation and edited Song Practice handoff (`?import=workbench`).
+
+`src/score-import/core.ts` is the framework-independent import domain shared verbatim by the React workbench and Bun CLI. It owns stable source-hash IDs, canonical 960-PPQ timing, raw source notes, deterministic interpretation, warnings, and ABC/MIDI/MusicXML/JSON serialization. WAV analysis calls `analyzePcmThroughProduction`, preserving the production pitch tracker and note segmenter as the single detector. Optional executable adapters are local comparators and skip when unconfigured.
+
+`src/score-editor/` owns the framework-independent monophonic correction domain (`editorTypes.ts`, `EditableArrangement.ts`, `validation.ts`, `serialization.ts`, `editorSelection.ts`):
+
+- **Immutability:** `ScoreImportProject` and `Candidate` are never mutated; `createEditableArrangementFromCandidate` derives an isolated `EditableArrangementProject` (`960 PPQ`, explicit rests, deterministic IDs derived from source SHA-256 + candidate hash + edit sequence index).
+- **Reversible commands:** all edits flow through `applyEditCommand` and `EditorCommandHistory` (`set-pitch`, `move-pitch-diatonically`, `respell-pitch`, `set-duration`, `insert-event`, `delete-event` with `close-gap` or `leave-rest`, `convert-note-rest`, `split-event`, `merge-events`, `toggle-tie`, `transpose-selection`, `shift-octave`, `crop-to-selection`, `set-metadata`) with deterministic ripple timing and full `Undo/Redo`.
+- **abcjs engraving & drag boundary:** `EditorNotationStage.tsx` uses `abcjs` only for engraving and gesture capture. Every vertical drag or toolbar action dispatches an `EditCommand`, updates `EditableArrangement`, serializes deterministic ABC with barline-split tie mapping (`serializeArrangementToAbcWithMap`), and re-binds SVG anchors to canonical event IDs.
+- **Validation & interchange:** `validation.ts` continuously validates monophony, positive integer tick durations, explicit rests, tie consistency, pitch/spelling agreement, and 10-hole/12-hole harmonica range/fingering diagnostics. `serialization.ts` provides byte-deterministic export to ABC, Standard MIDI, MusicXML 4.0, canonical JSON, and reloadable `.harmonica-project.json`.
