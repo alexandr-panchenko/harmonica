@@ -12,6 +12,7 @@ Start here:
 - [`docs/product-roadmap.md`](docs/product-roadmap.md) — unified master plan, decide-now vs change-later matrix, and phased execution roadmap;
 - [`docs/canvas-collab-architecture.md`](docs/canvas-collab-architecture.md) — 3-layer architecture separating deterministic musical standards, collaborative agent artifacts (`AnimaticML/ml-collab-codec`), and the zoomable 2D/3D canvas desktop (`AnimaticML/canvas-ir`);
 - [`docs/design-packet.md`](docs/design-packet.md) — complete Portable Instruments design packet (vision, IA, journeys, screens, instruments, agent, ingestion/generation, wireframes, and review criteria);
+- [`docs/chromatic-harmonica-repertoire-methodology.md`](docs/chromatic-harmonica-repertoire-methodology.md) — complete repertoire-selection handout and future solo-miniature workflow, scheduled after the shared human/agent notation editor;
 - [`docs/functional-practice-spec.md`](docs/functional-practice-spec.md) — binding microphone, transport and exercise semantics;
 - [`docs/architecture.md`](docs/architecture.md) — current production boundaries.
 
