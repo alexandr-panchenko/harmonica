@@ -1,8 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trainerUrl } from "../app/url";
 import { PlaybackEngine } from "../audio/PlaybackEngine";
+import { InfiniteCanvasBoard } from "../canvas-workbench/InfiniteCanvasBoard";
+import { CollabProjectDocument } from "../collab/portableInstrumentsSchema";
 import { ThemeControl } from "../components/ThemeControl";
 import { STANDARD_C12 } from "../harmonica/profile";
+import { ImprovisationWorkspace } from "../improvisation/ImprovisationWorkspace";
+import type { PortableInstrumentId } from "../instruments/instrumentProfiles";
 import { adaptAbc } from "../notation/abc/AbcAdapter";
 import { MusicStage } from "../notation/abc/AbcRenderer";
 import {
@@ -22,6 +26,7 @@ import {
   serializeEditorProjectJson,
 } from "../score-editor/serialization";
 import { analyzeHarmonicaRange, validateArrangement } from "../score-editor/validation";
+import { GuidedRecorderAndCreationPanel } from "./GuidedRecorderAndCreationPanel";
 import {
   importScore,
   interpret,
@@ -34,7 +39,7 @@ import {
   type Settings,
 } from "./core";
 
-export type WorkbenchStage = "import" | "extract" | "edit" | "export";
+export type WorkbenchStage = "import" | "extract" | "edit" | "canvas" | "improvise" | "export";
 
 const player = new PlaybackEngine();
 
@@ -44,6 +49,8 @@ export function ScoreImportWorkbench() {
   const [selectedCandidateId, setSelectedCandidateId] = useState("");
   const [editorProject, setEditorProject] = useState<EditableArrangementProject>();
   const historyRef = useRef<EditorCommandHistory | null>(null);
+  const collabDocRef = useRef<CollabProjectDocument | null>(null);
+  const [canvasInstrumentId, setCanvasInstrumentId] = useState<PortableInstrumentId>("harmonica-12-c");
   const [, setRevisionTick] = useState(0);
   const [profileId, setProfileId] = useState(
     () => localStorage.getItem("harmonica-profile") ?? STANDARD_C12.id,
@@ -62,6 +69,35 @@ export function ScoreImportWorkbench() {
     [project, selectedCandidateId],
   );
 
+  const [canvasSelectedEventIds, setCanvasSelectedEventIds] = useState<string[]>([]);
+
+  const syncCollabFromEditor = (nextEditor: EditableArrangementProject, lyricsLines?: readonly string[]) => {
+    if (!collabDocRef.current) {
+      collabDocRef.current = new CollabProjectDocument(nextEditor, canvasInstrumentId, lyricsLines);
+    } else {
+      collabDocRef.current.syncFromArrangement(nextEditor.arrangement, canvasInstrumentId);
+    }
+  };
+
+  const loadImportedProject = (imported: Project, lyricsLines?: readonly string[], jumpToCanvas = false) => {
+    setProject(imported);
+    const firstCand = imported.candidates.find((c) => c.id === imported.selectedCandidateId) ?? imported.candidates[0];
+    setSelectedCandidateId(firstCand?.id ?? "");
+    if (firstCand) {
+      const draft = createEditableArrangementFromCandidate(imported, firstCand.id);
+      historyRef.current = new EditorCommandHistory(draft);
+      setEditorProject(draft);
+      setCanvasSelectedEventIds(draft.arrangement.events[0] ? [draft.arrangement.events[0].id] : []);
+      collabDocRef.current = new CollabProjectDocument(draft, canvasInstrumentId, lyricsLines);
+      setStage(jumpToCanvas ? "canvas" : "extract");
+    } else {
+      setEditorProject(undefined);
+      historyRef.current = null;
+      collabDocRef.current = null;
+      setStage("extract");
+    }
+  };
+
   const loadFile = async (file: File) => {
     setBusy(true);
     setError("");
@@ -76,6 +112,7 @@ export function ScoreImportWorkbench() {
         setSelectedCandidateId(parsedEditor.sourceCandidateId);
         historyRef.current = new EditorCommandHistory(parsedEditor);
         setEditorProject(parsedEditor);
+        syncCollabFromEditor(parsedEditor);
         setStage("edit");
       } else {
         const bytes = new Uint8Array(await file.arrayBuffer());
@@ -84,6 +121,7 @@ export function ScoreImportWorkbench() {
         setSelectedCandidateId(imported.selectedCandidateId ?? imported.candidates[0]?.id ?? "");
         setEditorProject(undefined);
         historyRef.current = null;
+        collabDocRef.current = null;
         setStage("extract");
       }
     } catch (e) {
@@ -115,7 +153,7 @@ export function ScoreImportWorkbench() {
     });
   };
 
-  const startEditingCandidate = (targetCandidate?: Candidate) => {
+  const startEditingCandidate = (targetCandidate?: Candidate, nextStage: "edit" | "canvas" = "edit") => {
     const chosen = targetCandidate ?? candidate;
     if (!project || !chosen) return;
     player.stopReferencePlayback();
@@ -123,7 +161,8 @@ export function ScoreImportWorkbench() {
     const draft = createEditableArrangementFromCandidate(project, chosen.id);
     historyRef.current = new EditorCommandHistory(draft);
     setEditorProject(draft);
-    setStage("edit");
+    syncCollabFromEditor(draft);
+    setStage(nextStage);
   };
 
   const executeCommand = (command: EditCommand) => {
@@ -133,6 +172,7 @@ export function ScoreImportWorkbench() {
       setError("");
       const res = hist.execute(command);
       setEditorProject(res.project);
+      syncCollabFromEditor(res.project);
       setRevisionTick((t) => t + 1);
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -142,21 +182,33 @@ export function ScoreImportWorkbench() {
   const handleUndo = () => {
     const hist = historyRef.current;
     if (!hist) return;
-    setEditorProject(hist.undo());
+    const next = hist.undo();
+    setEditorProject(next);
+    syncCollabFromEditor(next);
     setRevisionTick((t) => t + 1);
   };
 
   const handleRedo = () => {
     const hist = historyRef.current;
     if (!hist) return;
-    setEditorProject(hist.redo());
+    const next = hist.redo();
+    setEditorProject(next);
+    syncCollabFromEditor(next);
     setRevisionTick((t) => t + 1);
   };
 
   const handleResetToCandidate = () => {
     const hist = historyRef.current;
     if (!hist) return;
-    setEditorProject(hist.resetToBase());
+    const next = hist.resetToBase();
+    setEditorProject(next);
+    syncCollabFromEditor(next);
+    setRevisionTick((t) => t + 1);
+  };
+
+  const handleCollabArrangementSync = (nextEditor: EditableArrangementProject) => {
+    historyRef.current = new EditorCommandHistory(nextEditor);
+    setEditorProject(nextEditor);
     setRevisionTick((t) => t + 1);
   };
 
@@ -273,7 +325,7 @@ export function ScoreImportWorkbench() {
             aria-current={stage === "edit" ? "step" : undefined}
             onClick={() => {
               if (editorProject) setStage("edit");
-              else if (candidate) startEditingCandidate(candidate);
+              else if (candidate) startEditingCandidate(candidate, "edit");
             }}
           >
             3. Edit
@@ -281,14 +333,40 @@ export function ScoreImportWorkbench() {
           <button
             type="button"
             disabled={!project}
+            className={stage === "canvas" ? "active" : ""}
+            aria-current={stage === "canvas" ? "step" : undefined}
+            data-testid="workbench-stage-canvas-btn"
+            onClick={() => {
+              if (editorProject) {
+                syncCollabFromEditor(editorProject);
+                setStage("canvas");
+              } else if (candidate) {
+                startEditingCandidate(candidate, "canvas");
+              }
+            }}
+          >
+            4. Canvas 2D &amp; AI
+          </button>
+          <button
+            type="button"
+            className={stage === "improvise" ? "active" : ""}
+            aria-current={stage === "improvise" ? "step" : undefined}
+            data-testid="workbench-stage-improvise-btn"
+            onClick={() => setStage("improvise")}
+          >
+            5. Scale &amp; Improvise
+          </button>
+          <button
+            type="button"
+            disabled={!project}
             className={stage === "export" ? "active" : ""}
             aria-current={stage === "export" ? "step" : undefined}
             onClick={() => {
-              if (!editorProject && candidate) startEditingCandidate(candidate);
+              if (!editorProject && candidate) startEditingCandidate(candidate, "edit");
               setStage("export");
             }}
           >
-            4. Export
+            6. Export
           </button>
         </nav>
 
@@ -343,9 +421,26 @@ export function ScoreImportWorkbench() {
                       Resume editing arrangement →
                     </button>
                   )}
+                  {editorProject && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        syncCollabFromEditor(editorProject);
+                        setStage("canvas");
+                      }}
+                    >
+                      Open 2D Canvas Board →
+                    </button>
+                  )}
                 </div>
               </div>
             )}
+
+            <GuidedRecorderAndCreationPanel
+              onProjectCreated={(imported) => {
+                loadImportedProject(imported, undefined, false);
+              }}
+            />
           </section>
         )}
 
@@ -549,6 +644,99 @@ export function ScoreImportWorkbench() {
             onResetToCandidate={handleResetToCandidate}
             onOpenExportStage={() => setStage("export")}
             onOpenInSongPractice={() => openInSongPractice(editedAbc)}
+          />
+        )}
+
+        {stage === "canvas" && editorProject && collabDocRef.current && (
+          <InfiniteCanvasBoard
+            collabDoc={collabDocRef.current}
+            arrangement={editorProject.arrangement}
+            selectedEventIds={
+              canvasSelectedEventIds.length > 0
+                ? canvasSelectedEventIds
+                : editorProject.arrangement.events[0]
+                  ? [editorProject.arrangement.events[0].id]
+                  : []
+            }
+            onSelectEvent={(evId) => setCanvasSelectedEventIds([evId])}
+            onDragPitchDiatonically={(evId, deltaSteps) => {
+              executeCommand({
+                type: "move-pitch-diatonically",
+                eventId: evId,
+                deltaSteps,
+              });
+            }}
+            onSyncFromCollab={() => {
+              if (!collabDocRef.current || !editorProject) return;
+              const decoded = collabDocRef.current.getDecodedState();
+              setCanvasInstrumentId(decoded.activeInstrument);
+              handleCollabArrangementSync({
+                ...editorProject,
+                arrangement: decoded.arrangement,
+              });
+            }}
+            onPlayAudition={() => {
+              void player.playMelody(editableArrangementToMelody(editorProject.arrangement));
+            }}
+            onOpenInSongPractice={() => openInSongPractice(editedAbc)}
+          />
+        )}
+
+        {stage === "improvise" && (
+          <ImprovisationWorkspace
+            defaultInstrumentId={canvasInstrumentId}
+            onExportPhraseToWorkbench={(title, midis) => {
+              const rawNotes = midis.map((midi, idx) => ({
+                id: `improv_${idx + 1}`,
+                midi,
+                startTick: idx * 960,
+                durationTick: 960,
+                velocity: 96,
+              }));
+              const settings: Settings = {
+                sourceId: "improv_line",
+                strategy: "as-written",
+                prefer: "sharps",
+                grid: "1/4",
+                tempoQpm: 108,
+                meter: { numerator: 4, denominator: 4 },
+                overlapPolicy: "trim-previous",
+                octaveShift: 0,
+                minMidi: 48,
+                maxMidi: 84,
+              };
+              const cand = interpret(rawNotes, settings, "improvisation_phrase_sha256", title);
+              const improvProject: Project = {
+                schemaVersion: 1,
+                provenance: {
+                  sourceType: "midi",
+                  fileName: `${title.toLowerCase().replace(/[^a-z0-9]+/g, "-")}.mid`,
+                  sha256: "improvisation_phrase_sha256",
+                  byteLength: midis.length * 16,
+                  importer: "harmonica-improv-studio",
+                  importerVersion: "1.0.0",
+                },
+                sourceSummary: {
+                  format: "Improvised Phrase",
+                  tempoChanges: 1,
+                  meterChanges: 1,
+                  inventory: [
+                    {
+                      id: "improv_line",
+                      label: title,
+                      noteCount: midis.length,
+                      minMidi: Math.min(...midis),
+                      maxMidi: Math.max(...midis),
+                    },
+                  ],
+                },
+                candidates: [cand],
+                selectedCandidateId: cand.id,
+                settingsHash: "improvisation_settings_hash",
+              };
+              loadImportedProject(improvProject, [title], false);
+              setStage("edit");
+            }}
           />
         )}
 

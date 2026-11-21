@@ -365,7 +365,7 @@ button.primary { padding: 9px 15px; border-color: var(--mode-accent); background
 }
 /* Local-first score ingestion workbench and visual correction editor */
 .workbench-shell { min-height: 100vh; display: grid; grid-template-rows: auto 1fr auto; background: var(--canvas); color: var(--text-primary); }
-.workbench-topbar { position: sticky; top: 0; z-index: 30; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; padding: 12px clamp(1rem, 3vw, 2.5rem); border-bottom: 1px solid var(--border-subtle); background: color-mix(in srgb, var(--surface-1) 95%, transparent); }
+.workbench-topbar { position: relative; z-index: 30; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px 20px; padding: 12px clamp(1rem, 3vw, 2.5rem); border-bottom: 1px solid var(--border-subtle); background: var(--surface-1); }
 .workbench-brand-cluster { display: flex; align-items: center; gap: 14px; }
 .workbench-back-link { display: inline-flex; align-items: center; min-height: 40px; padding: 7px 12px; border: 1px solid var(--border-strong); border-radius: 10px; background: var(--surface-raised); color: var(--text-primary); text-decoration: none; font-size: 13px; font-weight: 700; }
 .workbench-back-link:hover { border-color: var(--mode-accent); }
@@ -517,10 +517,551 @@ button.primary { padding: 9px 15px; border-color: var(--mode-accent); background
 @media (max-width: 600px) {
   .workbench-topbar { padding: 10px 12px; }
   .workbench-main { width: calc(100% - 1.25rem); padding: 12px 0 28px; }
-  .workbench-stage-nav { width: 100%; display: grid; grid-template-columns: repeat(4, 1fr); }
+  .workbench-stage-nav { width: 100%; display: grid; grid-template-columns: repeat(3, 1fr); }
   .workbench-stage-nav button { padding: 5px 4px; font-size: 11px; }
   .editor-toolbar { overflow-x: auto; flex-wrap: nowrap; }
   .editor-toolbar-group { flex: 0 0 auto; }
   .export-row button { flex: 1 1 45%; }
 }
+
+/* ==========================================================================
+   Phase 2-6: CanvasIR 2D Board, ml-collab-codec Dock, Creation & Improvisation
+   ========================================================================== */
+
+.infinite-canvas-workspace {
+  display: grid;
+  gap: 10px;
+}
+
+.canvas-hud-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-1);
+}
+
+.canvas-hud-left,
+.canvas-hud-right,
+.hud-cluster {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.hud-badge {
+  padding: 4px 10px;
+  border-radius: 999px;
+  background: var(--mode-tint);
+  color: var(--mode-accent);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.hud-instrument-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.hud-instrument-picker select,
+.canvas-instrument-select {
+  min-height: 36px;
+  padding: 4px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.canvas-zoom-indicator {
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.canvas-ir-stage-container {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--border-strong);
+  border-radius: 16px;
+  background: var(--surface-1);
+  box-shadow: var(--shadow);
+}
+
+.canvas-ir-surface {
+  display: block;
+  touch-action: none;
+  user-select: none;
+}
+
+.collab-artifact-drawer {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  width: min(440px, calc(100% - 24px));
+  display: grid;
+  grid-template-rows: auto auto 1fr auto;
+  gap: 8px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.artifact-drawer-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.artifact-drawer-header h3 {
+  margin: 2px 0 0;
+  font-size: 14px;
+}
+
+.artifact-drawer-help,
+.artifact-hint {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 11.5px;
+  line-height: 1.45;
+}
+
+.artifact-source-textarea {
+  width: 100%;
+  height: 100%;
+  min-height: 220px;
+  padding: 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: 11.5px;
+  line-height: 1.45;
+  resize: none;
+}
+
+.artifact-drawer-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.canvas-agent-dock {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-1);
+}
+
+.agent-dock-prompt-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12.5px;
+}
+
+.agent-status-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--success);
+}
+
+.agent-skill-buttons {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.agent-proposal-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--mode-accent);
+  border-radius: 12px;
+  background: var(--mode-tint);
+}
+
+.proposal-copy {
+  display: grid;
+  gap: 2px;
+  font-size: 12px;
+}
+
+.proposal-summary {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.proposal-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--mode-accent);
+  color: var(--surface-raised);
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.proposal-diff-pill {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.proposal-actions,
+.agent-skill-strip {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+/* Guided Recorder, Song Creation & OMR/AMT Job Hub */
+.creation-ingestion-hub {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-1);
+}
+
+.creation-tabs-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.creation-tabs-header h3 {
+  margin: 2px 0 0;
+  font-size: 16px;
+}
+
+.creation-panel-body {
+  display: grid;
+  gap: 12px;
+}
+
+.creation-split-grid {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.15fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.creation-brief-col,
+.creation-output-col {
+  display: grid;
+  gap: 10px;
+}
+
+.creation-brief-col label {
+  display: grid;
+  gap: 4px;
+  color: var(--text-secondary);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.creation-brief-col textarea {
+  width: 100%;
+  min-height: 76px;
+  padding: 8px 10px;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.lyrics-lines-editor {
+  display: grid;
+  gap: 6px;
+}
+
+.lyrics-lines-editor input {
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 12.5px;
+}
+
+.generated-takes-box {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  background: var(--surface-2);
+  font-size: 12.5px;
+}
+
+.take-radio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  cursor: pointer;
+}
+
+.recorder-status-line {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 12.5px;
+}
+
+/* Improvisation & Scale Explorer */
+.improvisation-workspace-panel {
+  display: grid;
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 16px;
+  background: var(--surface-1);
+}
+
+.improvisation-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.improvisation-header h3 {
+  margin: 2px 0 4px;
+  font-size: 18px;
+}
+
+.improvisation-controls-row {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.compact-field {
+  display: grid;
+  gap: 3px;
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.compact-field select {
+  min-height: 36px;
+  padding: 4px 9px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.improvisation-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(300px, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.improv-canvas-card,
+.improv-mission-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  background: var(--surface-raised);
+}
+
+.improv-canvas-card-header,
+.improv-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12.5px;
+}
+
+.improv-card-header select {
+  min-height: 32px;
+  padding: 4px 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  font-size: 12px;
+}
+
+.improv-badge {
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--mode-tint);
+  color: var(--mode-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.improv-instrument-canvas {
+  display: block;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-1);
+}
+
+.improv-continuous-pitch-bar {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-1);
+  font-size: 11.5px;
+}
+
+.improv-continuous-pitch-bar label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-weight: 700;
+}
+
+.improv-scale-note-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.improv-scale-note-btn {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  min-width: 58px;
+  padding: 6px 8px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  background: var(--surface-1);
+  font-size: 12px;
+}
+
+.improv-scale-note-btn small {
+  color: var(--text-secondary);
+  font-size: 10px;
+}
+
+.improv-scale-note-btn.root-tone {
+  border-color: var(--mode-accent);
+}
+
+.improv-scale-note-btn.active {
+  border-color: var(--mode-accent);
+  background: var(--mode-tint);
+}
+
+.improv-active-placement-readout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-1);
+  font-size: 12px;
+}
+
+.improvisation-missions-column {
+  display: grid;
+  gap: 12px;
+}
+
+.improv-prompt-copy {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.45;
+}
+
+.improv-evaluation-banner {
+  padding: 9px 11px;
+  border-radius: 10px;
+  background: var(--surface-1);
+  font-size: 12px;
+}
+
+.improv-evaluation-banner.passed {
+  border: 1px solid var(--success);
+  background: color-mix(in srgb, var(--success) 14%, var(--surface-1));
+}
+
+.improv-captured-phrase-row {
+  display: grid;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.improv-phrase-actions,
+.improv-call-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 960px) {
+  .improvisation-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
 

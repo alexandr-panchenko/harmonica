@@ -250,3 +250,64 @@ test("phone editor flow keeps notation readable, opens inspector drawer, and pre
   await page.getByRole("button", { name: "Step pitch up" }).click();
   await expect(page.locator(".editor-event-hitbox").first()).toHaveAttribute("data-pitch", "D4");
 });
+
+test("CanvasIR 2D Workspace, ml-collab-codec <project> artifact diff, Multi-Instrument projections, Song Creation bridge, and Scale Improvisation Studio", async ({
+  page,
+}, testInfo) => {
+  test.skip(testInfo.project.name !== "desktop", "desktop 2D canvas and multi-instrument studio");
+  await page.goto("tools/score-import/");
+
+  // 1. Song Creation: Lyrics + ACE-Step audio -> Honest transcription bridge into score candidate
+  await page.getByRole("button", { name: /Create Song \(Lyrics \+ Audio\)/ }).click();
+  await expect(page.getByTestId("create-song-panel")).toBeVisible();
+  await page.getByRole("button", { name: "2. Generate Audio Takes (ACE-Step)" }).click();
+  await expect(page.getByTestId("generated-audio-ready")).toContainText(
+    "Audio ready · No editable score yet",
+  );
+  await page.getByRole("button", { name: /3\. Transcribe Selected Audio/ }).click();
+  await expect(page.getByRole("region", { name: "Extract stage" })).toBeVisible();
+
+  // 2. Open Stage 4: Canvas 2D & AI (CanvasIR + ml-collab-codec)
+  await page.getByTestId("workbench-stage-canvas-btn").click();
+  await expect(page.getByRole("region", { name: "CanvasIR 2D Workspace" })).toBeVisible();
+  await expect(page.getByTestId("canvas-ir-board")).toBeVisible();
+
+  // Switch active portable instrument to 17-Tine Kalimba and Pontic Lyra
+  const instSelect = page.getByLabel("Canvas active instrument");
+  await instSelect.selectOption("kalimba-17c");
+  await expect(page.getByText(/Active instrument:/)).toContainText("Kalimba (17-Tine)");
+  await instSelect.selectOption("pontic-lyra");
+  await expect(page.getByText(/Active instrument:/)).toContainText("Pontic Lyra (3-String)");
+
+  // 3. Inspect <project> tagged artifact drawer and verify schema tags
+  await page.getByRole("button", { name: /Inspect <project> Artifact/ }).click();
+  const artifactTextarea = page.getByLabel("Tagged project artifact source");
+  await expect(artifactTextarea).toBeVisible();
+  const sourceText = await artifactTextarea.inputValue();
+  expect(sourceText).toContain("<project ");
+  expect(sourceText).toContain('active-instrument="pontic-lyra"');
+  expect(sourceText).toContain("<arrangement ");
+  expect(sourceText).toContain("<board ");
+  await page.getByRole("button", { name: "Close" }).click();
+
+  // 4. Propose an Agent skill edit via ml-collab-codec proposeEdit() and apply via rebaseProposal()
+  await page.getByRole("button", { name: /Transpose \+2 semitones/ }).click();
+  const proposalBanner = page.getByTestId("agent-proposal-banner");
+  await expect(proposalBanner).toBeVisible();
+  await expect(proposalBanner).toContainText("Transpose +2 semitones");
+  await page.getByRole("button", { name: /Apply Proposal \(rebaseProposal\)/ }).click();
+  await expect(proposalBanner).toBeHidden();
+
+  // 5. Open Stage 5: Scale & Improvise (Scale Explorer, Constraint Cards, Call & Response)
+  await page.getByTestId("workbench-stage-improvise-btn").click();
+  await expect(page.getByTestId("improvisation-workspace")).toBeVisible();
+  await page.getByTestId("improv-instrument-select").selectOption("pontic-lyra");
+  await expect(page.getByTestId("improv-continuous-pitch-bar")).toBeVisible();
+  await page.getByTestId("improv-recommended-preset-btn").click();
+
+  // Load Call sequence into phrase buffer and open phrase in Score Editor
+  await page.getByTestId("improv-echo-call-btn").click();
+  await page.getByTestId("improv-send-phrase-to-editor-btn").click();
+  await expect(page.getByRole("region", { name: "Editable score notation" })).toBeVisible();
+});
+
